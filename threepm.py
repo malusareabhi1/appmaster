@@ -255,7 +255,8 @@ st.download_button(
     label="📥 Download Trade Log as CSV",
     data=trade_log_df.to_csv(index=False),
     file_name="nifty_3pm_breakout_tradelog.csv",
-    mime="text/csv"
+    mime="text/csv",
+    key="breakout_log"
 )
 ###############################################################################OUTPUT#############################################################
 st.subheader("📉 Breakdown Log – Did Price Cross Below 3PM Close and Drop 100 Points?")
@@ -269,6 +270,8 @@ st.download_button(
     label="📥 Download Trade Log as CSV",
     data=breakdown_df.to_csv(index=False),
     file_name="nifty_3pm_breakout_tradelog.csv",
-    mime="text/csv"
+    mime="text/csv",
+     key="breakdown_log"
+    
 )
 ###########################################################################OUTPUT#################################################################
