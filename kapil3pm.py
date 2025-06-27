@@ -36,10 +36,13 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         datetime_col = df.columns[0]
         #df[datetime_col] = pd.to_datetime(df[datetime_col]).dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
         df[datetime_col] = pd.to_datetime(df[datetime_col])
+
+        # Fix timezone conversion error
         if df[datetime_col].dt.tz is None:
             df[datetime_col] = df[datetime_col].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
         else:
             df[datetime_col] = df[datetime_col].dt.tz_convert('Asia/Kolkata')
+
 
         df.rename(columns={datetime_col: 'datetime'}, inplace=True)
         df.columns = df.columns.str.lower()
