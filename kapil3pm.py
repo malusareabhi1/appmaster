@@ -45,7 +45,11 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
 
 
         df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-        df.columns = df.columns.str.lower()
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(-1)  # Flatten it by keeping last level
+        
+        df.columns = df.columns.str.lower()  # Now safe to apply .str.lower()
+
         # Filter market hours
         df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
                 (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
