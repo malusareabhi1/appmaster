@@ -219,6 +219,7 @@ fig.add_trace(go.Scatter(
     textposition="bottom center"
 ))
 
+
 fig.update_layout(
     title="NIFTY 15-Min Chart (Last 10 Trading Days)",
     xaxis_title="DateTime (IST)",
