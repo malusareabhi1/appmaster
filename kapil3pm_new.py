@@ -285,6 +285,15 @@ if df.empty:
 df = filter_last_n_days(df, analysis_days)
 
 df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+df_3pm = df_3pm.rename(columns={
+    'datetime': 'datetime',
+    'open_^nsei': 'open',
+    'high_^nsei': 'high',
+    'low_^nsei': 'low',
+    'close_^nsei': 'close',
+    'volume_^nsei': 'volume'
+})
+#st.write("Available columns:", df.columns.tolist())
 # ✅ Manually set the required columns (works for most tickers)
 df = df.rename(columns={
     'datetime': 'datetime',
@@ -294,7 +303,7 @@ df = df.rename(columns={
     'close_^nsei': 'close',
     'volume_^nsei': 'volume'
 })
-st.write("Available columns:", df.columns.tolist())
+#st.write("Available columns:", df.columns.tolist())
 
 required_cols = ['datetime', 'open', 'high', 'low', 'close']
 
