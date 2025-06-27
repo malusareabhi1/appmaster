@@ -396,7 +396,8 @@ st.subheader("📉 Breakdown Log – Did Price Cross Below 3PM Close and Drop 10
 st.dataframe(breakdown_df)
 
 # Show total count
-count = breakdown_df[breakdown_df['Crossed & Dropped 100?'] == '✅ Yes'].shape[0]
+#count = breakdown_df[breakdown_df['Crossed & Dropped 100?'] == '✅ Yes'].shape[0]
+count = breakdown_df[breakdown_df['Result'] == '🎯 Target Hit'].shape[0]
 st.success(f"✅ This scenario happened **{count} times** in the last {len(df_3pm)-1} trading days.")
 
 st.download_button(
