@@ -403,3 +403,29 @@ st.download_button(
     
 )
 ###########################################################################OUTPUT#################################################################
+st.subheader("📘 Trade Log – Did Next Day Break 3PM High + 100 Points?")
+st.dataframe(trade_log_df)
+
+st.success(f"✅ Target hit {trade_log_df[trade_log_df['Result'] == '🎯 Target Hit'].shape[0]} times out of {len(trade_log_df)} trades.")
+
+st.download_button(
+    label="📥 Download Breakout Log",
+    data=trade_log_df.to_csv(index=False),
+    file_name="nifty_3pm_breakout_log.csv",
+    mime="text/csv",
+    key="breakout_csv"
+)
+
+st.subheader("📉 Breakdown Log – Did Price Cross 3PM Close & Drop?")
+st.dataframe(breakdown_df)
+
+st.success(f"✅ Target hit {breakdown_df[breakdown_df['Result'] == '🎯 Target Hit'].shape[0]} times out of {len(breakdown_df)} trades.")
+
+st.download_button(
+    label="📥 Download Breakdown Log",
+    data=breakdown_df.to_csv(index=False),
+    file_name="nifty_3pm_breakdown_log.csv",
+    mime="text/csv",
+    key="breakdown_csv"
+)
+
