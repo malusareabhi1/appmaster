@@ -296,6 +296,15 @@ if missing_cols:
     st.error(f"Missing columns: {missing_cols}")
     st.stop()
 
+# ✅ Manually set the required columns (works for most tickers)
+df = df.rename(columns={
+    'Datetime': 'datetime',
+    'Open': 'open_^nsei',
+    'High': 'high_^nsei',
+    'Low': 'low_^nsei',
+    'Close': 'close_^nsei'
+})
+
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
 
 # Plot chart
