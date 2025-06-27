@@ -195,8 +195,6 @@ def generate_trade_log(df_3pm, df):
 
         next_day_data = df[(df['datetime'].dt.date == next_day_date) &
                            (df['datetime'].dt.time >= pd.to_datetime("09:30").time())].copy()
-
-        # Sort by datetime
         next_day_data.sort_values('datetime', inplace=True)
 
         ### 📈 Breakout Logic
@@ -210,17 +208,23 @@ def generate_trade_log(df_3pm, df):
 
             if not target_hit.empty:
                 breakout_result = '🎯 Target Hit'
+                exit_price = target_breakout
                 exit_time = target_hit.iloc[0]['datetime']
             elif not sl_hit.empty:
                 breakout_result = '🛑 Stop Loss Hit'
+                exit_price = sl_breakout
                 exit_time = sl_hit.iloc[0]['datetime']
             else:
                 breakout_result = '⏰ Time Exit'
+                exit_price = after_entry.iloc[-1]['close']
                 exit_time = after_entry.iloc[-1]['datetime']
+            
+            pnl = round(exit_price - entry_breakout, 2)
         else:
             entry_time = None
             exit_time = None
             breakout_result = '❌ No Entry'
+            pnl = 0.0
 
         breakout_logs.append({
             '3PM Date': current['datetime'].date(),
@@ -231,7 +235,8 @@ def generate_trade_log(df_3pm, df):
             'Target': round(target_breakout, 2),
             'Entry Time': entry_time.time() if entry_time else '-',
             'Exit Time': exit_time.time() if exit_time else '-',
-            'Result': breakout_result
+            'Result': breakout_result,
+            'P&L': pnl
         })
 
         ### 📉 Breakdown Logic
@@ -239,6 +244,7 @@ def generate_trade_log(df_3pm, df):
         target_hit = False
         entry_time = None
         exit_time = None
+        pnl = 0.0
 
         for j in range(1, len(next_day_data)):
             prev = next_day_data.iloc[j - 1]
@@ -254,16 +260,22 @@ def generate_trade_log(df_3pm, df):
 
                 if not target_hit.empty:
                     breakdown_result = '🎯 Target Hit'
+                    exit_price = target_breakdown
                     exit_time = target_hit.iloc[0]['datetime']
                 elif not sl_hit.empty:
                     breakdown_result = '🛑 Stop Loss Hit'
+                    exit_price = sl_breakdown
                     exit_time = sl_hit.iloc[0]['datetime']
                 else:
                     breakdown_result = '⏰ Time Exit'
+                    exit_price = after_entry.iloc[-1]['close']
                     exit_time = after_entry.iloc[-1]['datetime']
+
+                pnl = round(entry_breakdown - exit_price, 2)
                 break
         else:
             breakdown_result = '❌ No Entry'
+            pnl = 0.0
 
         breakdown_logs.append({
             '3PM Date': current['datetime'].date(),
@@ -274,10 +286,12 @@ def generate_trade_log(df_3pm, df):
             'Target': round(target_breakdown, 2),
             'Entry Time': entry_time.time() if entry_time else '-',
             'Exit Time': exit_time.time() if exit_time else '-',
-            'Result': breakdown_result
+            'Result': breakdown_result,
+            'P&L': pnl
         })
 
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
+
 
     
 trade_log_df, breakdown_df = generate_trade_log(df_3pm, df)
@@ -386,6 +400,7 @@ st.download_button(
     mime="text/csv",
     key="breakout_csv"
 )
+st.success(f"✅ Total P&L: ₹{trade_log_df['P&L'].sum():,.2f}")
 
 st.subheader("📉 Breakdown Log – Did Price Cross 3PM Close & Drop?")
 st.dataframe(breakdown_df)
@@ -399,3 +414,5 @@ st.download_button(
     mime="text/csv",
     key="breakdown_csv"
 )
+st.success(f"✅ Total P&L: ₹{breakdown_df['P&L'].sum():,.2f}")
+
