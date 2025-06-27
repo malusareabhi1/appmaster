@@ -292,10 +292,10 @@ st.write("Available columns:", df.columns.tolist())
 # ✅ Manually set the required columns (works for most tickers)
 df = df.rename(columns={
     'datetime': 'datetime',
-    'open': 'open_^nsei',
-    'high': 'high_^nsei',
-    'low': 'low_^nsei',
-    'close': 'close_^nsei'
+    'open_^nsei': 'open',
+    'high_^nsei': 'high',
+    'low_^nsei': 'low',
+    'close_^nsei': 'close'
 })
 st.write("Available columns:", df.columns.tolist())
 required_cols = ['datetime', 'open', 'high', 'low', 'close']
