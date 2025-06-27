@@ -291,11 +291,11 @@ df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].re
 st.write("Available columns:", df.columns.tolist())
 # ✅ Manually set the required columns (works for most tickers)
 df = df.rename(columns={
-    'Datetime': 'datetime',
-    'Open': 'open_^nsei',
-    'High': 'high_^nsei',
-    'Low': 'low_^nsei',
-    'Close': 'close_^nsei'
+    'datetime': 'datetime',
+    'open': 'open_^nsei',
+    'high': 'high_^nsei',
+    'low': 'low_^nsei',
+    'close': 'close_^nsei'
 })
 st.write("Available columns:", df.columns.tolist())
 required_cols = ['datetime', 'open', 'high', 'low', 'close']
