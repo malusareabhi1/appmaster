@@ -31,8 +31,35 @@ This intraday breakout/backtest strategy is based on the NIFTY 15-minute chart.
 @st.cache_data(ttl=3600)
 def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     try:
-        df = yf.download(ticker, interval=interval, period=period, progress=False)
+        #df = yf.download(ticker, interval=interval, period=period, progress=False)
+        #df.reset_index(inplace=True)
+        # Fetch data
+        df = yf.download(ticker, interval="15m", period="60d", progress=False)
         df.reset_index(inplace=True)
+        
+        # Fix MultiIndex columns if any
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(-1)
+        
+        # Ensure datetime column is named consistently
+        datetime_cols = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
+        if datetime_cols:
+            df = df.rename(columns={datetime_cols[0]: 'datetime'})
+        else:
+            st.error("❌ No datetime column found after download.")
+            st.stop()
+        
+        # Convert datetime to IST
+        try:
+            df['datetime'] = pd.to_datetime(df['datetime'])
+            if df['datetime'].dt.tz is None:
+                df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+            else:
+                df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
+            st.stop()
+
         datetime_col = df.columns[0]
         #df[datetime_col] = pd.to_datetime(df[datetime_col]).dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
         df[datetime_col] = pd.to_datetime(df[datetime_col])
