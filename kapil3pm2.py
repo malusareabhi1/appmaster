@@ -4,10 +4,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 #import plotly.express as px
-
-
-
-
 st.set_page_config(page_title="NIFTY 15-Min Chart with 3PM Breakout Strategy", layout="wide")
 
 st.title("📈 NIFTY 15-Min Chart – 3PM Breakout/Breakdown Strategy")
@@ -79,9 +75,6 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
-
-
-
 def filter_last_n_days(df, n_days):
     df['date'] = df['datetime'].dt.date
     unique_days = sorted(df['date'].unique())
@@ -378,10 +371,6 @@ def plot_cumulative_pnl(df, title):
     return fig
 st.plotly_chart(plot_cumulative_pnl(trade_log_df, "Breakout – Cumulative P&L Over Time"))
 st.plotly_chart(plot_cumulative_pnl(breakdown_df, "Breakdown – Cumulative P&L Over Time"))
-
-
-
-
 #st.plotly_chart(plot_cumulative_pnl(trade_log
 
                                     
