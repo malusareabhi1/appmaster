@@ -5,6 +5,30 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="NIFTY 15-Min Chart", layout="wide")
 #st.title("📈 NIFTY 15-Min Chart – Last 60 Days")
+st.markdown("## 📘 Strategy Explanation – 3PM 15-Minute Candle")
+
+st.info("""
+**Strategy Overview:**
+
+This intraday breakout/backtest strategy is based on the NIFTY 15-minute chart.
+
+### 🔼 Breakout Logic:
+- At **3:00 PM**, capture the high of the 15-minute candle.
+- On the **next trading day**, if the price crosses **3PM High + 100 points**, it's marked as a successful breakout.
+- This can be used as a directional continuation signal.
+
+### 🔽 Breakdown Logic:
+- Also track the **3PM Close** price.
+- On the next day, if the price first crosses below the previous close and then drops **100 points lower**, it's marked as a successful breakdown.
+- This indicates bearish continuation.
+
+### 📈 Use Case:
+- Helps identify key market strength or weakness near end-of-day, with potential for trade planning next morning.
+- Useful for swing traders and intraday strategists.
+
+Note: This is a **backtest logic** and not a buy/sell recommendation.
+""")
+
 
 with st.spinner("Fetching NIFTY 15-min data..."):
     ticker = "^NSEI"
