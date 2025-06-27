@@ -279,8 +279,11 @@ def generate_trade_log(df_3pm, df):
         })
 
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
+    trade_log_df, breakdown_df = generate_trade_log(df_3pm, df)
 
-trade_log_df, breakdown_df = generate_trade_log(df_3pm, df)
+
+
+
 #####################################################################################################################################################################
 # Keep only the last 10 **trading days**
 df['date'] = df['datetime'].dt.date
