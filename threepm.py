@@ -199,25 +199,26 @@ fig = go.Figure(data=[go.Candlestick(
 
 
 fig.update_traces(increasing_line_color='green', decreasing_line_color='red')
+
 fig.add_trace(go.Scatter(
     x=df_3pm['datetime'],
     y=df_3pm['high'],
-    mode='markers+text',
+    mode='markers',
     name='3PM High',
-    marker=dict(color='orange', size=8, symbol='triangle-up'),
-    text=["High"] * len(df_3pm),
-    textposition="top center"
+    marker=dict(color='orange', size=8, symbol='triangle-up')
 ))
 
 fig.add_trace(go.Scatter(
     x=df_3pm['datetime'],
     y=df_3pm['low'],
-    mode='markers+text',
+    mode='markers',
     name='3PM Low',
-    marker=dict(color='cyan', size=8, symbol='triangle-down'),
-    text=["Low"] * len(df_3pm),
-    textposition="bottom center"
+    marker=dict(color='cyan', size=8, symbol='triangle-down')
 ))
+
+
+
+
 
 
 fig.update_layout(
