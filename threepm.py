@@ -166,7 +166,7 @@ if not all(col in df.columns for col in required_cols):
 
 
 # Show dataframe sample
-st.dataframe(df.head())
+#st.dataframe(df.head())
 
 # Then proceed to plot
 fig = go.Figure(data=[go.Candlestick(
