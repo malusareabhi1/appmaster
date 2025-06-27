@@ -54,18 +54,8 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
             st.write("📋 Available columns:", df.columns.tolist())
             st.stop()
 
-    df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-
-    try:
-        df['datetime'] = pd.to_datetime(df['datetime'])
-        if df['datetime'].dt.tz is None:
-            df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-        else:
-            df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
-    except Exception as e:
-        st.error(f"Error converting datetime: {e}")
-        st.stop()
-        # Convert datetime to IST
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+    
         try:
             df['datetime'] = pd.to_datetime(df['datetime'])
             if df['datetime'].dt.tz is None:
@@ -73,33 +63,43 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
             else:
                 df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
         except Exception as e:
-            st.error(f"Error loading data: {e}")
+            st.error(f"Error converting datetime: {e}")
             st.stop()
-
-        datetime_col = df.columns[0]
-        #df[datetime_col] = pd.to_datetime(df[datetime_col]).dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-        df[datetime_col] = pd.to_datetime(df[datetime_col])
-
-        # Fix timezone conversion error
-        if df[datetime_col].dt.tz is None:
-            df[datetime_col] = df[datetime_col].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-        else:
-            df[datetime_col] = df[datetime_col].dt.tz_convert('Asia/Kolkata')
-
-
-        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(-1)  # Flatten it by keeping last level
-        
-        df.columns = df.columns.str.lower()  # Now safe to apply .str.lower()
-
-        # Filter market hours
-        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
-                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
-        return df
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
+            # Convert datetime to IST
+            try:
+                df['datetime'] = pd.to_datetime(df['datetime'])
+                if df['datetime'].dt.tz is None:
+                    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+                else:
+                    df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+            except Exception as e:
+                st.error(f"Error loading data: {e}")
+                st.stop()
+    
+            datetime_col = df.columns[0]
+            #df[datetime_col] = pd.to_datetime(df[datetime_col]).dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+            df[datetime_col] = pd.to_datetime(df[datetime_col])
+    
+            # Fix timezone conversion error
+            if df[datetime_col].dt.tz is None:
+                df[datetime_col] = df[datetime_col].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+            else:
+                df[datetime_col] = df[datetime_col].dt.tz_convert('Asia/Kolkata')
+    
+    
+            df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(-1)  # Flatten it by keeping last level
+            
+            df.columns = df.columns.str.lower()  # Now safe to apply .str.lower()
+    
+            # Filter market hours
+            df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                    (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+            return df
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
+            return pd.DataFrame()
 
 def filter_last_n_days(df, n_days):
     df['date'] = df['datetime'].dt.date
