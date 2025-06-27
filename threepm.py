@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 st.set_page_config(page_title="NIFTY 15-Min Chart", layout="wide")
-st.title("📈 NIFTY 15-Min Chart – Last 60 Days")
+#st.title("📈 NIFTY 15-Min Chart – Last 60 Days")
 
 with st.spinner("Fetching NIFTY 15-min data..."):
     ticker = "^NSEI"
