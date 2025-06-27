@@ -376,7 +376,8 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("📘 Trade Log – Did Next Day Break 3PM High + 100 Points?")
 st.dataframe(trade_log_df)
 # Filter successful breakouts
-success_count = trade_log_df[trade_log_df['Hit?'] == '✅ Yes'].shape[0]
+#success_count = trade_log_df[trade_log_df['Hit?'] == '✅ Yes'].shape[0]
+success_count = trade_log_df[trade_log_df['Result'] == '🎯 Target Hit'].shape[0]
 total_checked = trade_log_df.shape[0]
 
 st.markdown(f"### 📊 Summary: 3PM High + 100 Point Breakout")
