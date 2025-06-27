@@ -31,75 +31,50 @@ This intraday breakout/backtest strategy is based on the NIFTY 15-minute chart.
 @st.cache_data(ttl=3600)
 def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     try:
-        #df = yf.download(ticker, interval=interval, period=period, progress=False)
-        #df.reset_index(inplace=True)
-        # Fetch data
-        df = yf.download(ticker, interval="15m", period="60d", progress=False)
-
+        df = yf.download(ticker, interval=interval, period=period, progress=False)
         if df.empty:
             st.error("❌ No data returned from yfinance.")
             st.stop()
-    
-        df.reset_index(inplace=True)  # 'Datetime' becomes a column here
-    
+
+        df.reset_index(inplace=True)
+
         # Detect datetime column
         datetime_col = None
         for col in df.columns:
             if 'date' in col.lower() or 'time' in col.lower():
                 datetime_col = col
                 break
-    
+
         if not datetime_col:
             st.error("❌ No datetime column found after reset_index().")
             st.write("📋 Available columns:", df.columns.tolist())
             st.stop()
 
+        # Rename datetime column
         df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-    
-        try:
-            df['datetime'] = pd.to_datetime(df['datetime'])
-            if df['datetime'].dt.tz is None:
-                df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-            else:
-                df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
-        except Exception as e:
-            st.error(f"Error converting datetime: {e}")
-            st.stop()
-            # Convert datetime to IST
-            try:
-                df['datetime'] = pd.to_datetime(df['datetime'])
-                if df['datetime'].dt.tz is None:
-                    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-                else:
-                    df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
-            except Exception as e:
-                st.error(f"Error loading data: {e}")
-                st.stop()
-    
-            datetime_col = df.columns[0]
-            #df[datetime_col] = pd.to_datetime(df[datetime_col]).dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-            df[datetime_col] = pd.to_datetime(df[datetime_col])
-    
-            # Fix timezone conversion error
-            if df[datetime_col].dt.tz is None:
-                df[datetime_col] = df[datetime_col].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-            else:
-                df[datetime_col] = df[datetime_col].dt.tz_convert('Asia/Kolkata')
-    
-    
-            df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(-1)  # Flatten it by keeping last level
-            
-            df.columns = df.columns.str.lower()  # Now safe to apply .str.lower()
-    
-            # Filter market hours
-            df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
-                    (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
-            return df
-        except Exception as e:
-            st.error(f"Error loading data: {e}")
-            return pd.DataFrame()
+
+        # Convert to datetime and then to IST
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        if df['datetime'].dt.tz is None:
+            df['datetime'] = df['datetime'].dt.tz_localize('UTC')
+        df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+
+        # If MultiIndex columns, flatten it
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(-1)
+
+        # Convert all column names to lowercase
+        df.columns = df.columns.str.lower()
+
+        # Filter only market hours
+        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+
+        return df
+
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
 
 
 
