@@ -288,6 +288,7 @@ if df.empty:
 
 df = filter_last_n_days(df, analysis_days)
 df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+st.write("Available columns:", df.columns.tolist())
 
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
 
