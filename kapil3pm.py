@@ -289,13 +289,6 @@ if df.empty:
 df = filter_last_n_days(df, analysis_days)
 df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
 st.write("Available columns:", df.columns.tolist())
-
-required_cols = ['datetime', 'open', 'high', 'low', 'close']
-missing_cols = [col for col in required_cols if col not in df.columns]
-if missing_cols:
-    st.error(f"Missing columns: {missing_cols}")
-    st.stop()
-
 # ✅ Manually set the required columns (works for most tickers)
 df = df.rename(columns={
     'Datetime': 'datetime',
@@ -304,6 +297,15 @@ df = df.rename(columns={
     'Low': 'low_^nsei',
     'Close': 'close_^nsei'
 })
+st.write("Available columns:", df.columns.tolist())
+required_cols = ['datetime', 'open', 'high', 'low', 'close']
+
+missing_cols = [col for col in required_cols if col not in df.columns]
+if missing_cols:
+    st.error(f"Missing columns: {missing_cols}")
+    st.stop()
+
+
 
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
 
