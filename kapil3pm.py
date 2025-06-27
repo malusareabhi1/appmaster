@@ -101,6 +101,8 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
             st.error(f"Error loading data: {e}")
             return pd.DataFrame()
 
+
+
 def filter_last_n_days(df, n_days):
     df['date'] = df['datetime'].dt.date
     unique_days = sorted(df['date'].unique())
