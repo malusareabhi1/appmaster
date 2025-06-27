@@ -168,8 +168,115 @@ for i in range(len(df_3pm) - 1):
 
 # Convert to DataFrame
 breakdown_df = pd.DataFrame(close_breakdown_log)
+##############################################################################################################################
 
+def generate_trade_log(df_3pm, df):
+    breakout_logs = []
+    breakdown_logs = []
 
+    for i in range(len(df_3pm) - 1):
+        current = df_3pm.iloc[i]
+        next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
+
+        threepm_high = current['high']
+        threepm_close = current['close']
+        threepm_low = current['low']
+
+        # Entry/SL/Target for breakout
+        entry_breakout = threepm_high + 100
+        sl_breakout = threepm_low
+        target_breakout = entry_breakout + (entry_breakout - sl_breakout) * 1.5
+
+        # Entry/SL/Target for breakdown
+        entry_breakdown = threepm_close
+        sl_breakdown = threepm_high
+        target_breakdown = entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5
+
+        next_day_data = df[(df['datetime'].dt.date == next_day_date) &
+                           (df['datetime'].dt.time >= pd.to_datetime("09:30").time())].copy()
+
+        # Sort by datetime
+        next_day_data.sort_values('datetime', inplace=True)
+
+        ### 📈 Breakout Logic
+        entry_row = next_day_data[next_day_data['high'] >= entry_breakout]
+        if not entry_row.empty:
+            entry_time = entry_row.iloc[0]['datetime']
+            after_entry = next_day_data[next_day_data['datetime'] >= entry_time]
+
+            target_hit = after_entry[after_entry['high'] >= target_breakout]
+            sl_hit = after_entry[after_entry['low'] <= sl_breakout]
+
+            if not target_hit.empty:
+                breakout_result = '🎯 Target Hit'
+                exit_time = target_hit.iloc[0]['datetime']
+            elif not sl_hit.empty:
+                breakout_result = '🛑 Stop Loss Hit'
+                exit_time = sl_hit.iloc[0]['datetime']
+            else:
+                breakout_result = '⏰ Time Exit'
+                exit_time = after_entry.iloc[-1]['datetime']
+        else:
+            entry_time = None
+            exit_time = None
+            breakout_result = '❌ No Entry'
+
+        breakout_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Next Day': next_day_date,
+            '3PM High': round(threepm_high, 2),
+            'Entry': round(entry_breakout, 2),
+            'SL': round(sl_breakout, 2),
+            'Target': round(target_breakout, 2),
+            'Entry Time': entry_time.time() if entry_time else '-',
+            'Exit Time': exit_time.time() if exit_time else '-',
+            'Result': breakout_result
+        })
+
+        ### 📉 Breakdown Logic
+        crossed_down = False
+        target_hit = False
+        entry_time = None
+        exit_time = None
+
+        for j in range(1, len(next_day_data)):
+            prev = next_day_data.iloc[j - 1]
+            curr = next_day_data.iloc[j]
+
+            if not crossed_down and prev['high'] > entry_breakdown and curr['low'] < entry_breakdown:
+                crossed_down = True
+                entry_time = curr['datetime']
+                after_entry = next_day_data[next_day_data['datetime'] >= entry_time]
+
+                target_hit = after_entry[after_entry['low'] <= target_breakdown]
+                sl_hit = after_entry[after_entry['high'] >= sl_breakdown]
+
+                if not target_hit.empty:
+                    breakdown_result = '🎯 Target Hit'
+                    exit_time = target_hit.iloc[0]['datetime']
+                elif not sl_hit.empty:
+                    breakdown_result = '🛑 Stop Loss Hit'
+                    exit_time = sl_hit.iloc[0]['datetime']
+                else:
+                    breakdown_result = '⏰ Time Exit'
+                    exit_time = after_entry.iloc[-1]['datetime']
+                break
+        else:
+            breakdown_result = '❌ No Entry'
+
+        breakdown_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Next Day': next_day_date,
+            '3PM Close': round(threepm_close, 2),
+            'Entry': round(entry_breakdown, 2),
+            'SL': round(sl_breakdown, 2),
+            'Target': round(target_breakdown, 2),
+            'Entry Time': entry_time.time() if entry_time else '-',
+            'Exit Time': exit_time.time() if exit_time else '-',
+            'Result': breakdown_result
+        })
+
+    return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
 
 
 #####################################################################################################################################################################
@@ -220,8 +327,6 @@ fig = go.Figure(data=[go.Candlestick(
     name="NIFTY"
 )])
 
-
-
 fig.update_traces(increasing_line_color='green', decreasing_line_color='red')
 
 fig.add_trace(go.Scatter(
@@ -239,11 +344,6 @@ fig.add_trace(go.Scatter(
     name='3PM Low',
     marker=dict(color='cyan', size=8, symbol='triangle-down')
 ))
-
-
-
-
-
 
 fig.update_layout(
     title="NIFTY 15-Min Chart (Last 10 Trading Days)",
