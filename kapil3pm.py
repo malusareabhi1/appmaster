@@ -309,7 +309,7 @@ if missing_cols:
 
 
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
-st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
+#st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
 df_3pm = df_3pm.rename(columns={
     'datetime': 'datetime',
     'open_^nsei': 'open',
@@ -318,7 +318,7 @@ df_3pm = df_3pm.rename(columns={
     'close_^nsei': 'close',
     'volume_^nsei': 'volume'
 })
-st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
+#st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
 # Plot chart
 fig = plot_candlestick_chart(df, df_3pm)
 st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
