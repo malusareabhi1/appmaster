@@ -309,6 +309,7 @@ if missing_cols:
 
 
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
+st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
 
 # Plot chart
 fig = plot_candlestick_chart(df, df_3pm)
