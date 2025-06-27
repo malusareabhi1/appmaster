@@ -295,7 +295,8 @@ df = df.rename(columns={
     'open_^nsei': 'open',
     'high_^nsei': 'high',
     'low_^nsei': 'low',
-    'close_^nsei': 'close'
+    'close_^nsei': 'close',
+    'volume_^nsei': 'volume'
 })
 st.write("Available columns:", df.columns.tolist())
 required_cols = ['datetime', 'open', 'high', 'low', 'close']
