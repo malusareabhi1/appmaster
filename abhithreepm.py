@@ -372,42 +372,7 @@ fig.update_layout(
 
 ###########################################################OUTPUT###########################OUTPUT######################################################
 st.plotly_chart(fig, use_container_width=True)
-####################################################################################OUTPUT########################################################
-st.subheader("📘 Trade Log – Did Next Day Break 3PM High + 100 Points?")
-st.dataframe(trade_log_df)
-# Filter successful breakouts
-#success_count = trade_log_df[trade_log_df['Hit?'] == '✅ Yes'].shape[0]
-success_count = trade_log_df[trade_log_df['Result'] == '🎯 Target Hit'].shape[0]
-total_checked = trade_log_df.shape[0]
 
-st.markdown(f"### 📊 Summary: 3PM High + 100 Point Breakout")
-st.success(f"✅ This scenario happened **{success_count} times** out of **{total_checked}** trading days.")
-
-
-st.download_button(
-    label="📥 Download Trade Log as CSV",
-    data=trade_log_df.to_csv(index=False),
-    file_name="nifty_3pm_breakout_tradelog.csv",
-    mime="text/csv",
-    key="breakout_log"
-)
-###############################################################################OUTPUT#############################################################
-st.subheader("📉 Breakdown Log – Did Price Cross Below 3PM Close and Drop 100 Points?")
-st.dataframe(breakdown_df)
-
-# Show total count
-#count = breakdown_df[breakdown_df['Crossed & Dropped 100?'] == '✅ Yes'].shape[0]
-count = breakdown_df[breakdown_df['Result'] == '🎯 Target Hit'].shape[0]
-st.success(f"✅ This scenario happened **{count} times** in the last {len(df_3pm)-1} trading days.")
-
-st.download_button(
-    label="📥 Download Trade Log as CSV",
-    data=breakdown_df.to_csv(index=False),
-    file_name="nifty_3pm_breakout_tradelog.csv",
-    mime="text/csv",
-     key="breakdown_log"
-    
-)
 ###########################################################################OUTPUT#################################################################
 st.subheader("📘 Trade Log – Did Next Day Break 3PM High + 100 Points?")
 st.dataframe(trade_log_df)
