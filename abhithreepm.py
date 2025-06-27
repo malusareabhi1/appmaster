@@ -168,9 +168,8 @@ for i in range(len(df_3pm) - 1):
     })
 
 # Convert to DataFrame
-#breakdown_df = pd.DataFrame(close_breakdown_log)
-
-##############################################################################################################################
+# breakdown_df = pd.DataFrame(close_breakdown_log)
+############################################################################################################################
 
 def generate_trade_log(df_3pm, df):
     breakout_logs = []
