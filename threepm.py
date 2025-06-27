@@ -111,6 +111,7 @@ for i in range(len(df_3pm) - 1):  # Avoid last day, no "next day" after it
 
 # Convert to DataFrame
 trade_log_df = pd.DataFrame(trade_log)
+trade_log_df, breakdown_df = generate_trade_log(df_3pm, df)
 
 ####################################################################################################################################
 
