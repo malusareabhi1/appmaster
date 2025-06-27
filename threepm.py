@@ -110,8 +110,8 @@ for i in range(len(df_3pm) - 1):  # Avoid last day, no "next day" after it
     })
 
 # Convert to DataFrame
-trade_log_df = pd.DataFrame(trade_log)
-trade_log_df, breakdown_df = generate_trade_log(df_3pm, df)
+#trade_log_df = pd.DataFrame(trade_log)
+
 
 ####################################################################################################################################
 
@@ -168,7 +168,8 @@ for i in range(len(df_3pm) - 1):
     })
 
 # Convert to DataFrame
-breakdown_df = pd.DataFrame(close_breakdown_log)
+#breakdown_df = pd.DataFrame(close_breakdown_log)
+trade_log_df, breakdown_df = generate_trade_log(df_3pm, df)
 ##############################################################################################################################
 
 def generate_trade_log(df_3pm, df):
