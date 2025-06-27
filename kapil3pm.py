@@ -38,35 +38,30 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
 
         df.reset_index(inplace=True)
 
-        # Detect datetime column
-        datetime_col = None
-        for col in df.columns:
-            if 'date' in col.lower() or 'time' in col.lower():
-                datetime_col = col
-                break
+        # ✅ Flatten MultiIndex columns if needed
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
+
+        # ✅ Find datetime column automatically
+        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
 
         if not datetime_col:
             st.error("❌ No datetime column found after reset_index().")
             st.write("📋 Available columns:", df.columns.tolist())
             st.stop()
 
-        # Rename datetime column
         df.rename(columns={datetime_col: 'datetime'}, inplace=True)
 
-        # Convert to datetime and then to IST
+        # ✅ Convert to datetime and localize
         df['datetime'] = pd.to_datetime(df['datetime'])
         if df['datetime'].dt.tz is None:
             df['datetime'] = df['datetime'].dt.tz_localize('UTC')
         df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
-        # If MultiIndex columns, flatten it
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(-1)
+        # ✅ Now lowercase column names
+        df.columns = [col.lower() for col in df.columns]
 
-        # Convert all column names to lowercase
-        df.columns = df.columns.str.lower()
-
-        # Filter only market hours
+        # ✅ Filter NSE market hours (9:15 to 15:30)
         df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
                 (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
 
