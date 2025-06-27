@@ -28,6 +28,14 @@ This intraday breakout/backtest strategy is based on the NIFTY 15-minute chart.
 ---
 """)
 
+import plotly.express as px
+
+def plot_cumulative_pnl(df, title="Cumulative P&L"):
+    df['cumulative_pnl'] = df['P&L'].cumsum()
+    fig = px.line(df, x='3PM Date', y='cumulative_pnl', title=title)
+    fig.update_layout(height=400)
+    return fig
+    
 @st.cache_data(ttl=3600)
 def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     try:
@@ -341,6 +349,15 @@ def plot_cumulative_pnl(df, title):
     return fig
 st.plotly_chart(plot_cumulative_pnl(trade_log_df, "Breakout – Cumulative P&L Over Time"))
 st.plotly_chart(plot_cumulative_pnl(breakdown_df, "Breakdown – Cumulative P&L Over Time"))
+
+st.plotly_chart(plot_cumulative_pnl(trade_log_df, "📈 Breakout Strategy – Cumulative P&L"))
+st.plotly_chart(plot_cumulative_pnl(breakdown_df, "📉 Breakdown Strategy – Cumulative P&L"))
+
+st.metric("Win Rate", f"{(filtered_trade_df['Result'] == '🎯 Target Hit').mean() * 100:.1f}%")
+st.metric("Avg P&L", f"₹{filtered_trade_df['P&L'].mean():.2f}")
+st.metric("Max P&L", f"₹{filtered_trade_df['P&L'].max():.2f}")
+st.metric("Min P&L", f"₹{filtered_trade_df['P&L'].min():.2f}")
+
 
 #st.plotly_chart(plot_cumulative_pnl(trade_log
 
