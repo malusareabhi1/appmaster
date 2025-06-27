@@ -35,20 +35,36 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         #df.reset_index(inplace=True)
         # Fetch data
         df = yf.download(ticker, interval="15m", period="60d", progress=False)
-        df.reset_index(inplace=True)
-        
-        # Fix MultiIndex columns if any
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(-1)
-        
-        # Ensure datetime column is named consistently
-        datetime_cols = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
-        if datetime_cols:
-            df = df.rename(columns={datetime_cols[0]: 'datetime'})
-        else:
-            st.error("❌ No datetime column found after download.")
+
+        if df.empty:
+            st.error("❌ No data returned from yfinance.")
             st.stop()
-        
+    
+        df.reset_index(inplace=True)  # 'Datetime' becomes a column here
+    
+        # Detect datetime column
+        datetime_col = None
+        for col in df.columns:
+            if 'date' in col.lower() or 'time' in col.lower():
+                datetime_col = col
+                break
+    
+        if not datetime_col:
+            st.error("❌ No datetime column found after reset_index().")
+            st.write("📋 Available columns:", df.columns.tolist())
+            st.stop()
+
+    df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+    try:
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        if df['datetime'].dt.tz is None:
+            df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+        else:
+            df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+    except Exception as e:
+        st.error(f"Error converting datetime: {e}")
+        st.stop()
         # Convert datetime to IST
         try:
             df['datetime'] = pd.to_datetime(df['datetime'])
