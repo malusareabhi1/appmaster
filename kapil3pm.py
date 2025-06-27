@@ -353,10 +353,7 @@ st.plotly_chart(plot_cumulative_pnl(breakdown_df, "Breakdown – Cumulative P&L 
 st.plotly_chart(plot_cumulative_pnl(trade_log_df, "📈 Breakout Strategy – Cumulative P&L"))
 st.plotly_chart(plot_cumulative_pnl(breakdown_df, "📉 Breakdown Strategy – Cumulative P&L"))
 
-st.metric("Win Rate", f"{(filtered_trade_df['Result'] == '🎯 Target Hit').mean() * 100:.1f}%")
-st.metric("Avg P&L", f"₹{filtered_trade_df['P&L'].mean():.2f}")
-st.metric("Max P&L", f"₹{filtered_trade_df['P&L'].max():.2f}")
-st.metric("Min P&L", f"₹{filtered_trade_df['P&L'].min():.2f}")
+
 
 
 #st.plotly_chart(plot_cumulative_pnl(trade_log
