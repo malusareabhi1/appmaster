@@ -379,9 +379,6 @@ def plot_cumulative_pnl(df, title):
 st.plotly_chart(plot_cumulative_pnl(trade_log_df, "Breakout – Cumulative P&L Over Time"))
 st.plotly_chart(plot_cumulative_pnl(breakdown_df, "Breakdown – Cumulative P&L Over Time"))
 
-st.plotly_chart(plot_cumulative_pnl(trade_log_df, "📈 Breakout Strategy – Cumulative P&L"))
-st.plotly_chart(plot_cumulative_pnl(breakdown_df, "📉 Breakdown Strategy – Cumulative P&L"))
-
 
 
 
