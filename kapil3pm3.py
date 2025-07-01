@@ -274,6 +274,19 @@ filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
 filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
 st.dataframe(filtered_breakout_df)
 
+#filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
+#st.dataframe(filtered_breakout_df)
+
+#filtered_breakout_df = filtered_breakout_df[filtered_breakout_df['Result'] != '❌ No Entry']
+filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
+#st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
+
+
+st.subheader("📘 Breakout Logs")
+st.dataframe(filtered_breakout_df)
+show_trade_metrics(filtered_breakout_df, "Breakout Trades")
+
+st.download_button("📥 Download Log", filtered_breakout_df.to_csv(index=False), file_name="breakout_log.csv")
 #filtered_breakout_df = filtered_breakout_df[filtered_breakout_df['Result'] != '❌ No Entry']
 #filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
 #st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
