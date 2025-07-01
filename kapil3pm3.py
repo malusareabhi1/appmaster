@@ -279,3 +279,28 @@ st.dataframe(filtered_breakout_df)
 show_trade_metrics(filtered_breakout_df, "Breakout Trades")
 
 st.download_button("📥 Download Log", filtered_breakout_df.to_csv(index=False), file_name="breakout_log.csv")
+
+# ---------------- Breakdown Log Section ----------------
+st.subheader("📉 Breakdown Logs")
+
+# Use breakdown_df which is already returned from generate_trade_logs
+# Filter only valid trades (exclude '❌ No Entry')
+filtered_breakdown_df = breakdown_df[breakdown_df['Result'] != '❌ No Entry']
+
+# Apply formatted P&L text
+filtered_breakdown_df['P&L'] = filtered_breakdown_df['P&L'].apply(color_pnl_text)
+
+# Show styled breakdown dataframe
+st.dataframe(filtered_breakdown_df)
+
+# Show trade summary
+show_trade_metrics(filtered_breakdown_df, "Breakdown Trades")
+
+# Download button for filtered breakdown log
+st.download_button(
+    label="📥 Download Breakdown Log",
+    data=filtered_breakdown_df.to_csv(index=False),
+    file_name="breakdown_log.csv",
+    mime="text/csv"
+)
+
