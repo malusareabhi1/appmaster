@@ -149,34 +149,39 @@ def plot_candlestick_chart(df, df_3pm):
         decreasing_line_color='red'
     ))
 
-    # Add vertical lines at 3PM and horizontal rays
-    for _, row in df_3pm.iterrows():
-        dt = row['datetime']
-        high = row['high']
-        low = row['low']
+    # Horizontal rays from 3PM candle till next day's 3PM
+    for i in range(len(df_3pm) - 1):
+        ref_dt = df_3pm.iloc[i]['datetime']
+        next_day_dt = df_3pm.iloc[i + 1]['datetime']
+        high = df_3pm.iloc[i]['high']
+        low = df_3pm.iloc[i]['low']
 
-        # Vertical marker
-        fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
+        # Time window from next day 9:15 to next day 15:00
+        next_day_data = df[(df['datetime'] > ref_dt) & (df['datetime'] <= next_day_dt)]
 
-        # Horizontal ray from 3PM to end of day for HIGH
-        fig.add_trace(go.Scatter(
-            x=[dt, df['datetime'].max()],
-            y=[high, high],
-            mode='lines',
-            line=dict(color='orange', width=1, dash='dot'),
-            name='3PM High Ray',
-            showlegend=False
-        ))
+        if not next_day_data.empty:
+            x_start = next_day_data['datetime'].min()
+            x_end = next_day_data['datetime'].max()
 
-        # Horizontal ray for LOW
-        fig.add_trace(go.Scatter(
-            x=[dt, df['datetime'].max()],
-            y=[low, low],
-            mode='lines',
-            line=dict(color='cyan', width=1, dash='dot'),
-            name='3PM Low Ray',
-            showlegend=False
-        ))
+            # Horizontal line for 3PM High
+            fig.add_trace(go.Scatter(
+                x=[x_start, x_end],
+                y=[high, high],
+                mode='lines',
+                line=dict(color='orange', width=1, dash='dot'),
+                name='3PM High Ray',
+                showlegend=False
+            ))
+
+            # Horizontal line for 3PM Low
+            fig.add_trace(go.Scatter(
+                x=[x_start, x_end],
+                y=[low, low],
+                mode='lines',
+                line=dict(color='cyan', width=1, dash='dot'),
+                name='3PM Low Ray',
+                showlegend=False
+            ))
 
     fig.update_layout(
         title=f"NIFTY 15-Min Chart (Last {analysis_days} Trading Days)",
@@ -198,6 +203,7 @@ def plot_candlestick_chart(df, df_3pm):
         height=600
     )
     return fig
+
 
 def show_trade_metrics(df, label):
     total = len(df)
