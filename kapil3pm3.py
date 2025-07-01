@@ -162,6 +162,22 @@ def show_trade_metrics(df, label):
 df = load_nifty_data(period=f"{analysis_days}d")
 df = filter_last_n_days(df, analysis_days)
 
+# Dynamically rename OHLC columns if needed
+rename_map = {}
+for col in df.columns:
+    if 'open' in col.lower() and col != 'open':
+        rename_map[col] = 'open'
+    if 'high' in col.lower() and col != 'high':
+        rename_map[col] = 'high'
+    if 'low' in col.lower() and col != 'low':
+        rename_map[col] = 'low'
+    if 'close' in col.lower() and col != 'close':
+        rename_map[col] = 'close'
+    if 'volume' in col.lower() and col != 'volume':
+        rename_map[col] = 'volume'
+
+df = df.rename(columns=rename_map)
+
 required_cols = ['datetime', 'open', 'high', 'low', 'close']
 if not all(col in df.columns for col in required_cols):
     st.error("Missing required OHLC columns.")
