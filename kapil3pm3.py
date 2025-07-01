@@ -243,7 +243,7 @@ fig = plot_candlestick_chart(df, df_3pm)
 st.subheader("🕯️ NIFTY Candlestick Chart")
 st.plotly_chart(fig, use_container_width=True)
 
-filtered_breakout_df = trade_log_df[trade_log_df['Result'] != '❌ No Entry']
+filtered_breakout_df = filtered_breakout_df[filtered_breakout_df['Result'] != '❌ No Entry']
 st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
 
 
