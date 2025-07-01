@@ -243,6 +243,10 @@ fig = plot_candlestick_chart(df, df_3pm)
 st.subheader("🕯️ NIFTY Candlestick Chart")
 st.plotly_chart(fig, use_container_width=True)
 
+def color_pnl(val):
+    color = 'green' if val > 0 else 'red' if val < 0 else 'white'
+    return f'color: {color}; font-weight: bold;'
+# Define this function before usage
 def color_pnl_text(pnl):
     if pnl > 0:
         return f"🟢 {pnl}"
@@ -251,9 +255,15 @@ def color_pnl_text(pnl):
     else:
         return f"{pnl}"
 
-def color_pnl(val):
-    color = 'green' if val > 0 else 'red' if val < 0 else 'white'
-    return f'color: {color}; font-weight: bold;'
+# Filter the breakout dataframe to only show entries
+filtered_breakout_df = trade_log_df[trade_log_df['Result'] != '❌ No Entry']
+
+# Apply colored P&L text
+filtered_breakout_df['P&L'] = filtered_breakout_df['P&L'].apply(color_pnl_text)
+
+st.dataframe(filtered_breakout_df)
+
+
 
 
 filtered_breakout_df['P&L'] = filtered_breakout_df['P&L'].apply(color_pnl_text)
