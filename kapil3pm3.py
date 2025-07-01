@@ -132,7 +132,9 @@ def generate_trade_logs(df, offset, sl_percent):
             'P&L': pnl
         })
 
-    return pd.DataFrame(breakout_logs), df_3pm
+    #return pd.DataFrame(breakout_logs), df_3pm
+    return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs), df_3pm
+
 
 def plot_candlestick_chart(df, df_3pm):
     fig = go.Figure()
@@ -237,7 +239,9 @@ if not all(col in df.columns for col in required_cols):
     st.stop()
 
 #result, exit_time, exit_price = '❌ No Entry', '-', 0
-breakout_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+#breakout_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+
 fig = plot_candlestick_chart(df, df_3pm)
 
 st.subheader("🕯️ NIFTY Candlestick Chart")
