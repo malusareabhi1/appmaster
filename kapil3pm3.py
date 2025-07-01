@@ -135,22 +135,67 @@ def generate_trade_logs(df, offset, sl_percent):
     return pd.DataFrame(breakout_logs), df_3pm
 
 def plot_candlestick_chart(df, df_3pm):
-    fig = go.Figure(data=[go.Candlestick(
-        x=df['datetime'], open=df['open'], high=df['high'],
-        low=df['low'], close=df['close'], name="Price")])
+    fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=df_3pm['datetime'], y=df_3pm['high'], mode='markers',
-        name='3PM High', marker=dict(color='orange', size=8, symbol='triangle-up')
+    # Candlestick chart
+    fig.add_trace(go.Candlestick(
+        x=df['datetime'],
+        open=df['open'],
+        high=df['high'],
+        low=df['low'],
+        close=df['close'],
+        name="NIFTY",
+        increasing_line_color='green',
+        decreasing_line_color='red'
     ))
 
-    for dt in df_3pm['datetime']:
+    # Add vertical lines at 3PM and horizontal rays
+    for _, row in df_3pm.iterrows():
+        dt = row['datetime']
+        high = row['high']
+        low = row['low']
+
+        # Vertical marker
         fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
 
+        # Horizontal ray from 3PM to end of day for HIGH
+        fig.add_trace(go.Scatter(
+            x=[dt, df['datetime'].max()],
+            y=[high, high],
+            mode='lines',
+            line=dict(color='orange', width=1, dash='dot'),
+            name='3PM High Ray',
+            showlegend=False
+        ))
+
+        # Horizontal ray for LOW
+        fig.add_trace(go.Scatter(
+            x=[dt, df['datetime'].max()],
+            y=[low, low],
+            mode='lines',
+            line=dict(color='cyan', width=1, dash='dot'),
+            name='3PM Low Ray',
+            showlegend=False
+        ))
+
     fig.update_layout(
-        height=600, plot_bgcolor='black', paper_bgcolor='black', font=dict(color='white'),
-        xaxis_title="Time", yaxis_title="Price",
-        xaxis_rangeslider_visible=False
+        title=f"NIFTY 15-Min Chart (Last {analysis_days} Trading Days)",
+        xaxis_title="DateTime (IST)",
+        yaxis_title="Price",
+        xaxis_rangeslider_visible=False,
+        xaxis=dict(
+            type='date',
+            rangebreaks=[
+                dict(bounds=["sat", "mon"]),         # hide weekends
+                dict(bounds=[16, 9.15], pattern="hour")  # hide non-trading hours
+            ],
+            showgrid=False
+        ),
+        yaxis=dict(showgrid=True),
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        font=dict(color='white'),
+        height=600
     )
     return fig
 
