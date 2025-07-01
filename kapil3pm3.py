@@ -267,6 +267,11 @@ filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
 filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
 
 #st.dataframe(filtered_breakout_df)
+def show_trade_metrics(df, label):
+    total = len(df)
+    wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
+    pnl = df['P&L'].sum()
+    st.success(f"{label}: {total} trades | 🎯 Wins: {wins} | 💰 Total P&L: ₹{pnl:.2f}")
 
 
 
