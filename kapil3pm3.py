@@ -183,7 +183,7 @@ if not all(col in df.columns for col in required_cols):
     st.error("Missing required OHLC columns.")
     st.stop()
 
-result, exit_time, exit_price = '❌ No Entry', '-', 0
+#result, exit_time, exit_price = '❌ No Entry', '-', 0
 breakout_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
 fig = plot_candlestick_chart(df, df_3pm)
 
