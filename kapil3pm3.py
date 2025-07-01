@@ -243,8 +243,12 @@ fig = plot_candlestick_chart(df, df_3pm)
 st.subheader("🕯️ NIFTY Candlestick Chart")
 st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("📘 Breakout Logs")
-st.dataframe(breakout_df)
-show_trade_metrics(breakout_df, "Breakout Trades")
+filtered_breakout_df = trade_log_df[trade_log_df['Result'] != '❌ No Entry']
+st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
 
-st.download_button("📥 Download Log", breakout_df.to_csv(index=False), file_name="breakout_log.csv")
+
+st.subheader("📘 Breakout Logs")
+st.dataframe(filtered_breakout_df)
+show_trade_metrics(filtered_breakout_df, "Breakout Trades")
+
+st.download_button("📥 Download Log", filtered_breakout_df.to_csv(index=False), file_name="breakout_log.csv")
