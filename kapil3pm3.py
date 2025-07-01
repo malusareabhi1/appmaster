@@ -95,6 +95,8 @@ def generate_trade_logs(df, offset, sl_percent):
         entry_row = next_day[next_day['high'] >= entry_breakout]
 
         result, exit_time, exit_price = '❌ No Entry', '-', '-', 0
+        result, exit_time, exit_price = '❌ No Entry', '-', 0
+
         if not entry_row.empty:
             entry_time = entry_row.iloc[0]['datetime']
             after_entry = next_day[next_day['datetime'] >= entry_time].copy()
