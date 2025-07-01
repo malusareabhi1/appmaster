@@ -29,17 +29,48 @@ This intraday breakout/backtest strategy is based on the NIFTY 15-minute chart.
 
 @st.cache_data(ttl=3600)
 def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
-    df = yf.download(ticker, interval=interval, period=period, progress=False)
-    df.reset_index(inplace=True)
-    df.rename(columns={df.columns[0]: 'datetime'}, inplace=True)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    if df['datetime'].dt.tz is None:
-        df['datetime'] = df['datetime'].dt.tz_localize('UTC')
-    df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
-    df.columns = [col.lower() for col in df.columns]
-    df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
-            (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
-    return df
+    try:
+        df = yf.download(ticker, interval=interval, period=period, progress=False)
+        if df.empty:
+            st.error("❌ No data returned from yfinance.")
+            st.stop()
+
+        # ✅ If datetime is in index, move it to column
+        if isinstance(df.index, pd.DatetimeIndex):
+            df.reset_index(inplace=True)
+
+        # ✅ Flatten MultiIndex columns if needed
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
+
+        # ✅ Find datetime column automatically
+        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
+        if not datetime_col:
+            st.error("❌ No datetime column found.")
+            st.write("📋 Available columns:", df.columns.tolist())
+            st.stop()
+
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+        df['datetime'] = pd.to_datetime(df['datetime'])
+
+        # ✅ Localize to India time if needed
+        if df['datetime'].dt.tz is None:
+            df['datetime'] = df['datetime'].dt.tz_localize('UTC')
+        df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+
+        # ✅ Lowercase all column names
+        df.columns = [col.lower() for col in df.columns]
+
+        # ✅ Filter NSE market hours (9:15 to 15:30)
+        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+
+        return df
+
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
+
 
 def filter_last_n_days(df, n_days):
     df['date'] = df['datetime'].dt.date
