@@ -256,7 +256,7 @@ def color_pnl_text(pnl):
         return f"{pnl}"
 
 # Filter the breakout dataframe to only show entries
-filtered_breakout_df = trade_log_df[trade_log_df['Result'] != '❌ No Entry']
+filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
 
 # Apply colored P&L text
 filtered_breakout_df['P&L'] = filtered_breakout_df['P&L'].apply(color_pnl_text)
