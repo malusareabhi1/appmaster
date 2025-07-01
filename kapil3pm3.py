@@ -261,17 +261,17 @@ filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
 # Apply colored P&L text
 filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
 
-st.dataframe(filtered_breakout_df)
+#st.dataframe(filtered_breakout_df)
 
 
 
 
 filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
-st.dataframe(filtered_breakout_df)
+#st.dataframe(filtered_breakout_df)
 
 #filtered_breakout_df = filtered_breakout_df[filtered_breakout_df['Result'] != '❌ No Entry']
 filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
-st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
+#st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
 
 
 st.subheader("📘 Breakout Logs")
