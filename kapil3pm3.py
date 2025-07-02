@@ -250,8 +250,18 @@ def plot_candlestick_chart(df, df_3pm):
 def show_trade_metrics(df, label):
     total = len(df)
     wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
-    pnl = df['P&L'].sum()
+
+    # If P&L is a string (like "🟢 50.5"), strip emojis before summing
+    df_clean = df.copy()
+    df_clean['P&L'] = df_clean['P&L'].astype(str).str.replace("🟢", "").str.replace("🔴", "").str.strip()
+    
+    try:
+        pnl = df_clean['P&L'].astype(float).sum()
+    except ValueError:
+        pnl = 0.0
+
     st.success(f"{label}: {total} trades | 🎯 Wins: {wins} | 💰 Total P&L: ₹{pnl:.2f}")
+
 
 # ---------------- MAIN ------------------
 df = load_nifty_data(period=f"{analysis_days}d")
