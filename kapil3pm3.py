@@ -84,17 +84,14 @@ def generate_trade_logs(df, offset, sl_percent):
     for i in range(len(df_3pm) - 1):
         current = df_3pm.iloc[i]
         next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
-        threepm_high, threepm_close = current['high'], current['close']
+        next_day = df[df['datetime'].dt.date == next_day_date].copy()
 
-        # Long Entry Setup
-        entry_breakout = threepm_high + offset
+        # Breakout (Long)
+        entry_breakout = current['high'] + offset
         sl_breakout = entry_breakout * (1 - sl_percent / 100)
         target_breakout = entry_breakout + (entry_breakout - sl_breakout) * 1.5
 
-        next_day = df[df['datetime'].dt.date == next_day_date].copy()
         entry_row = next_day[next_day['high'] >= entry_breakout]
-
-        #result, exit_time, exit_price = '❌ No Entry', '-', '-', 0
         result, exit_time, exit_price = '❌ No Entry', '-', 0
 
         if not entry_row.empty:
@@ -132,8 +129,51 @@ def generate_trade_logs(df, offset, sl_percent):
             'P&L': pnl
         })
 
-    return pd.DataFrame(breakout_logs), df_3pm
-    #return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs), df_3pm
+        # Breakdown (Short)
+        entry_breakdown = current['close'] - offset
+        sl_breakdown = entry_breakdown * (1 + sl_percent / 100)
+        target_breakdown = entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5
+
+        entry_row = next_day[next_day['low'] <= entry_breakdown]
+        result, exit_time, exit_price = '❌ No Entry', '-', 0
+
+        if not entry_row.empty:
+            entry_time = entry_row.iloc[0]['datetime']
+            after_entry = next_day[next_day['datetime'] >= entry_time].copy()
+            after_entry['min_price'] = after_entry['low'].cummin()
+            after_entry['trailing_sl'] = after_entry['min_price'] * (1 + sl_percent / 100)
+
+            hit_rows = after_entry[(after_entry['high'] >= after_entry['trailing_sl']) | (after_entry['low'] <= target_breakdown)]
+            if not hit_rows.empty:
+                first_hit = hit_rows.iloc[0]
+                if first_hit['low'] <= target_breakdown:
+                    result = '🎯 Target Hit'
+                    exit_price = target_breakdown
+                else:
+                    result = '🛑 Trailing SL Hit'
+                    exit_price = first_hit['trailing_sl']
+                exit_time = first_hit['datetime']
+            else:
+                result = '⏰ Time Exit'
+                exit_price = after_entry.iloc[-1]['close']
+                exit_time = after_entry.iloc[-1]['datetime']
+            pnl = round(entry_breakdown - exit_price, 2)
+        else:
+            pnl = 0
+
+        breakdown_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Next Day': next_day_date,
+            'Entry': round(entry_breakdown, 2),
+            'SL': round(sl_breakdown, 2),
+            'Target': round(target_breakdown, 2),
+            'Exit Time': exit_time if isinstance(exit_time, str) else exit_time.time(),
+            'Result': result,
+            'P&L': pnl
+        })
+
+    return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs), df_3pm
+
 
 
 def plot_candlestick_chart(df, df_3pm):
@@ -239,7 +279,9 @@ if not all(col in df.columns for col in required_cols):
     st.stop()
 
 #result, exit_time, exit_price = '❌ No Entry', '-', 0
-breakout_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+#breakout_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+
 #breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
 
 fig = plot_candlestick_chart(df, df_3pm)
@@ -297,5 +339,14 @@ st.download_button("📥 Download Log", filtered_breakout_df.to_csv(index=False)
 #filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
 #st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
 
+# ----- Breakdown Trades -----
+filtered_breakdown_df = breakdown_df[breakdown_df['Result'] != '❌ No Entry']
+filtered_breakdown_df['P&L'] = filtered_breakdown_df['P&L'].apply(color_pnl_text)
+
+st.subheader("📕 Breakdown Logs")
+st.dataframe(filtered_breakdown_df)
+show_trade_metrics(filtered_breakdown_df, "Breakdown Trades")
+
+st.download_button("📥 Download Breakdown Log", filtered_breakdown_df.to_csv(index=False), file_name="breakdown_log.csv")
 
 
