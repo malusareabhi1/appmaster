@@ -35,15 +35,12 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
             st.error("❌ No data returned from yfinance.")
             st.stop()
 
-        # ✅ If datetime is in index, move it to column
         if isinstance(df.index, pd.DatetimeIndex):
             df.reset_index(inplace=True)
 
-        # ✅ Flatten MultiIndex columns if needed
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
 
-        # ✅ Find datetime column automatically
         datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
         if not datetime_col:
             st.error("❌ No datetime column found.")
@@ -53,15 +50,12 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         df.rename(columns={datetime_col: 'datetime'}, inplace=True)
         df['datetime'] = pd.to_datetime(df['datetime'])
 
-        # ✅ Localize to India time if needed
         if df['datetime'].dt.tz is None:
             df['datetime'] = df['datetime'].dt.tz_localize('UTC')
         df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
-        # ✅ Lowercase all column names
         df.columns = [col.lower() for col in df.columns]
 
-        # ✅ Filter NSE market hours (9:15 to 15:30)
         df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
                 (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
 
@@ -70,7 +64,6 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
-
 
 def filter_last_n_days(df, n_days):
     df['date'] = df['datetime'].dt.date
@@ -86,7 +79,6 @@ def generate_trade_logs(df, offset, sl_percent):
         next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
         next_day = df[df['datetime'].dt.date == next_day_date].copy()
 
-        # Breakout (Long)
         entry_breakout = current['high'] + offset
         sl_breakout = entry_breakout * (1 - sl_percent / 100)
         target_breakout = entry_breakout + (entry_breakout - sl_breakout) * 1.5
@@ -126,10 +118,9 @@ def generate_trade_logs(df, offset, sl_percent):
             'Target': round(target_breakout, 2),
             'Exit Time': exit_time if isinstance(exit_time, str) else exit_time.time(),
             'Result': result,
-            'P&L': pnl
+            'raw_pnl': pnl
         })
 
-        # Breakdown (Short)
         entry_breakdown = current['close'] - offset
         sl_breakdown = entry_breakdown * (1 + sl_percent / 100)
         target_breakdown = entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5
@@ -169,159 +160,11 @@ def generate_trade_logs(df, offset, sl_percent):
             'Target': round(target_breakdown, 2),
             'Exit Time': exit_time if isinstance(exit_time, str) else exit_time.time(),
             'Result': result,
-            'P&L': pnl
+            'raw_pnl': pnl
         })
 
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs), df_3pm
 
-
-
-def plot_candlestick_chart(df, df_3pm):
-    fig = go.Figure()
-
-    # Candlestick chart
-    fig.add_trace(go.Candlestick(
-        x=df['datetime'],
-        open=df['open'],
-        high=df['high'],
-        low=df['low'],
-        close=df['close'],
-        name="NIFTY",
-        increasing_line_color='green',
-        decreasing_line_color='red'
-    ))
-
-    # Horizontal rays from 3PM candle till next day's 3PM
-    for i in range(len(df_3pm) - 1):
-        ref_dt = df_3pm.iloc[i]['datetime']
-        next_day_dt = df_3pm.iloc[i + 1]['datetime']
-        high = df_3pm.iloc[i]['high']
-        low = df_3pm.iloc[i]['low']
-
-        # Time window from next day 9:15 to next day 15:00
-        next_day_data = df[(df['datetime'] > ref_dt) & (df['datetime'] <= next_day_dt)]
-
-        if not next_day_data.empty:
-            x_start = next_day_data['datetime'].min()
-            x_end = next_day_data['datetime'].max()
-
-            # Horizontal line for 3PM High
-            fig.add_trace(go.Scatter(
-                x=[x_start, x_end],
-                y=[high, high],
-                mode='lines',
-                line=dict(color='orange', width=1, dash='dot'),
-                name='3PM High Ray',
-                showlegend=False
-            ))
-
-            # Horizontal line for 3PM Low
-            fig.add_trace(go.Scatter(
-                x=[x_start, x_end],
-                y=[low, low],
-                mode='lines',
-                line=dict(color='cyan', width=1, dash='dot'),
-                name='3PM Low Ray',
-                showlegend=False
-            ))
-
-    fig.update_layout(
-        title=f"NIFTY 15-Min Chart (Last {analysis_days} Trading Days)",
-        xaxis_title="DateTime (IST)",
-        yaxis_title="Price",
-        xaxis_rangeslider_visible=False,
-        xaxis=dict(
-            type='date',
-            rangebreaks=[
-                dict(bounds=["sat", "mon"]),         # hide weekends
-                dict(bounds=[16, 9.15], pattern="hour")  # hide non-trading hours
-            ],
-            showgrid=False
-        ),
-        yaxis=dict(showgrid=True),
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(color='white'),
-        height=600
-    )
-    return fig
-
-
-def show_trade_metrics(df, label):
-    total = len(df)
-    wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
-
-    # Clean emoji from 'P&L' column to extract numbers
-    df_clean = df.copy()
-    df_clean['P&L_numeric'] = (
-        df_clean['P&L']
-        .astype(str)
-        .str.replace("🟢", "", regex=False)
-        .str.replace("🔴", "", regex=False)
-        .str.strip()
-    )
-
-    # Convert to float
-    try:
-        pnl = df_clean['P&L_numeric'].astype(float).sum()
-    except ValueError:
-        pnl = 0.0
-
-    st.success(f"{label}: {total} trades | 🎯 Wins: {wins} | 💰 Total P&L: ₹{pnl:.2f}")
-
-
-# ---------------- MAIN ------------------
-df = load_nifty_data(period=f"{analysis_days}d")
-if df.empty:
-    st.error("No data loaded.")
-    st.stop()
-
-df = filter_last_n_days(df, analysis_days)
-
-# Safely rename columns
-rename_map = {}
-for col in df.columns:
-    if 'open' in col.lower() and col != 'open':
-        rename_map[col] = 'open'
-    if 'high' in col.lower() and col != 'high':
-        rename_map[col] = 'high'
-    if 'low' in col.lower() and col != 'low':
-        rename_map[col] = 'low'
-    if 'close' in col.lower() and col != 'close':
-        rename_map[col] = 'close'
-    if 'volume' in col.lower() and col != 'volume':
-        rename_map[col] = 'volume'
-
-if isinstance(df, pd.DataFrame):
-    df = df.rename(columns=rename_map)
-else:
-    st.error("❌ 'df' is not a valid DataFrame.")
-    st.stop()
-
-# Call trade generator
-breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
-
-
-required_cols = ['datetime', 'open', 'high', 'low', 'close']
-if not all(col in df.columns for col in required_cols):
-    st.error("Missing required OHLC columns.")
-    st.stop()
-
-#result, exit_time, exit_price = '❌ No Entry', '-', 0
-#breakout_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
-breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
-
-#breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
-
-fig = plot_candlestick_chart(df, df_3pm)
-
-st.subheader("🕯️ NIFTY Candlestick Chart")
-st.plotly_chart(fig, use_container_width=True)
-
-def color_pnl(val):
-    color = 'green' if val > 0 else 'red' if val < 0 else 'white'
-    return f'color: {color}; font-weight: bold;'
-# Define this function before usage
 def color_pnl_text(pnl):
     if pnl > 0:
         return f"🟢 {pnl}"
@@ -330,52 +173,45 @@ def color_pnl_text(pnl):
     else:
         return f"{pnl}"
 
-# Filter the breakout dataframe to only show entries
-filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
-
-
-# Apply colored P&L text
-filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
-
-#st.dataframe(filtered_breakout_df)
 def show_trade_metrics(df, label):
     total = len(df)
     wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
-    pnl = df['P&L'].sum()
+    pnl = df['raw_pnl'].sum()
     st.success(f"{label}: {total} trades | 🎯 Wins: {wins} | 💰 Total P&L: ₹{pnl:.2f}")
 
+# ----- Load Data and Generate Trades -----
+df = load_nifty_data(period=f"{analysis_days}d")
+if df.empty:
+    st.error("No data loaded.")
+    st.stop()
 
+df = filter_last_n_days(df, analysis_days)
+rename_map = {col: col.lower() for col in df.columns}
+df.rename(columns=rename_map, inplace=True)
 
+breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
 
-filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
+fig = plot_candlestick_chart(df, df_3pm)
+
+st.subheader("🕯️ NIFTY Candlestick Chart")
+st.plotly_chart(fig, use_container_width=True)
+
+# ----- Breakout Logs -----
+filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry'].copy()
+filtered_breakout_df['P&L'] = filtered_breakout_df['raw_pnl'].apply(color_pnl_text)
+
 st.subheader("📘 Breakout Logs")
 st.dataframe(filtered_breakout_df)
 show_trade_metrics(filtered_breakout_df, "Breakout Trades")
-#st.dataframe(filtered_breakout_df)
 
-#filtered_breakout_df['P&L'] = breakout_df['P&L'].apply(color_pnl_text)
-#st.dataframe(filtered_breakout_df)
+st.download_button("📥 Download Breakout Log", filtered_breakout_df.to_csv(index=False), file_name="breakout_log.csv")
 
-#filtered_breakout_df = filtered_breakout_df[filtered_breakout_df['Result'] != '❌ No Entry']
-filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
-#st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
-
-
-
-
-st.download_button("📥 Download Log", filtered_breakout_df.to_csv(index=False), file_name="breakout_log.csv")
-#filtered_breakout_df = filtered_breakout_df[filtered_breakout_df['Result'] != '❌ No Entry']
-#filtered_breakout_df = breakout_df[breakout_df['Result'] != '❌ No Entry']
-#st.dataframe(filtered_breakout_df.style.applymap(color_pnl, subset=['P&L']))
-
-# ----- Breakdown Trades -----
-filtered_breakdown_df = breakdown_df[breakdown_df['Result'] != '❌ No Entry']
-filtered_breakdown_df['P&L'] = filtered_breakdown_df['P&L'].apply(color_pnl_text)
+# ----- Breakdown Logs -----
+filtered_breakdown_df = breakdown_df[breakdown_df['Result'] != '❌ No Entry'].copy()
+filtered_breakdown_df['P&L'] = filtered_breakdown_df['raw_pnl'].apply(color_pnl_text)
 
 st.subheader("📕 Breakdown Logs")
 st.dataframe(filtered_breakdown_df)
 show_trade_metrics(filtered_breakdown_df, "Breakdown Trades")
 
 st.download_button("📥 Download Breakdown Log", filtered_breakdown_df.to_csv(index=False), file_name="breakdown_log.csv")
-
-
