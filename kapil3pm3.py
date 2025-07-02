@@ -251,12 +251,19 @@ def show_trade_metrics(df, label):
     total = len(df)
     wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
 
-    # If P&L is a string (like "🟢 50.5"), strip emojis before summing
+    # Clean emoji from 'P&L' column to extract numbers
     df_clean = df.copy()
-    df_clean['P&L'] = df_clean['P&L'].astype(str).str.replace("🟢", "").str.replace("🔴", "").str.strip()
-    
+    df_clean['P&L_numeric'] = (
+        df_clean['P&L']
+        .astype(str)
+        .str.replace("🟢", "", regex=False)
+        .str.replace("🔴", "", regex=False)
+        .str.strip()
+    )
+
+    # Convert to float
     try:
-        pnl = df_clean['P&L'].astype(float).sum()
+        pnl = df_clean['P&L_numeric'].astype(float).sum()
     except ValueError:
         pnl = 0.0
 
