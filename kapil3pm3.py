@@ -255,9 +255,13 @@ def show_trade_metrics(df, label):
 
 # ---------------- MAIN ------------------
 df = load_nifty_data(period=f"{analysis_days}d")
+if df.empty:
+    st.error("No data loaded.")
+    st.stop()
+
 df = filter_last_n_days(df, analysis_days)
 
-# Dynamically rename OHLC columns if needed
+# Safely rename columns
 rename_map = {}
 for col in df.columns:
     if 'open' in col.lower() and col != 'open':
@@ -271,7 +275,15 @@ for col in df.columns:
     if 'volume' in col.lower() and col != 'volume':
         rename_map[col] = 'volume'
 
-df = df.rename(columns=rename_map)
+if isinstance(df, pd.DataFrame):
+    df = df.rename(columns=rename_map)
+else:
+    st.error("❌ 'df' is not a valid DataFrame.")
+    st.stop()
+
+# Call trade generator
+breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, sl_percent)
+
 
 required_cols = ['datetime', 'open', 'high', 'low', 'close']
 if not all(col in df.columns for col in required_cols):
