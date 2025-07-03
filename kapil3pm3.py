@@ -44,7 +44,7 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         st.error("❌ No data returned from yfinance.")
         st.stop()
 
-   df.reset_index(inplace=True)
+    df.reset_index(inplace=True)
 
     # Auto-detect the datetime column after reset_index
     datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower() or 'index' in col.lower()), None)
