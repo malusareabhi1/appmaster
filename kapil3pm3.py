@@ -68,7 +68,7 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
 
     # Filter market hours
     df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) & (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
-
+    df.columns = [str(col).lower() for col in df.columns]
     return df
 
 
@@ -94,6 +94,10 @@ def generate_trade_logs(df, offset, stoploss_type, stoploss_percent, target_mult
 
         # Breakout
         entry_breakout = current['high'] + offset
+        #entry_breakout = current['high'] + offset
+        print("Current keys:", current.index.tolist())
+        print("Current data:", current.to_dict())
+
         if stoploss_type == 'Percent Based':
             sl_breakout = entry_breakout * (1 - stoploss_percent / 100)
         else:
