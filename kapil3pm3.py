@@ -8,9 +8,28 @@ st.set_page_config(page_title="NIFTY 15-Min Chart with 3PM Breakout Strategy", l
 
 st.title("📈 NIFTY 15-Min Chart – 3PM Breakout/Breakdown Strategy")
 
-st.sidebar.header("Settings")
-offset_points = st.sidebar.number_input("Offset Points for Breakout/Breakdown", value=100, step=10)
-analysis_days = st.sidebar.slider("Number of Days to Analyze", min_value=10, max_value=90, value=60, step=5)
+st.sidebar.header("🛠️ Strategy Settings")
+
+offset_points = st.sidebar.number_input("🔼 Offset Points (Breakout/Breakdown)", value=100, step=10)
+analysis_days = st.sidebar.slider("📅 Days to Analyze", min_value=10, max_value=90, value=60, step=5)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🛑 Stop Loss / Exit Info")
+
+st.sidebar.markdown("""
+- **Breakout SL**: Based on 3PM Low  
+- **Breakout Exit**:  
+    - 🎯 Target = Entry + 1.5×(Entry - SL)  
+    - 🛑 SL Hit = below 3PM Low  
+    - ⏰ Time-based: End of session  
+
+- **Breakdown SL**: Based on 3PM High  
+- **Breakdown Exit**:  
+    - 🎯 Target = Entry - 1.5×(SL - Entry)  
+    - 🛑 SL Hit = above 3PM High  
+    - ⏰ Time-based: End of session
+""")
+
 
 st.markdown("""
 ## 📘 Strategy Explanation
