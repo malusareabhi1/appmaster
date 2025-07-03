@@ -45,32 +45,27 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         st.stop()
 
     df.reset_index(inplace=True)
-    df.columns = [str(col) for col in df.columns]
-    
-    # Auto-detect datetime column
+
+    # Rename datetime column if needed
     datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
-    
-    if not datetime_col:
-        st.error("❌ No datetime-like column found after reset_index.")
-        st.write("🔍 Columns available:", df.columns.tolist())
-        st.stop()
-    
-    df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-    
+    if datetime_col:
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+    # Convert all columns to lowercase (IMPORTANT!)
+    df.columns = [col.lower() for col in df.columns]
+
     df['datetime'] = pd.to_datetime(df['datetime'])
-    
-    # ✅ Safe timezone handling
+
     if df['datetime'].dt.tz is None:
         df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
     else:
         df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
-    df.columns = [col.lower() for col in df.columns]
-    # Market hours filter
-    df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
-            (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+    # Filter market hours
+    df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) & (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
 
     return df
+
 
 
 def filter_last_n_days(df, n_days):
