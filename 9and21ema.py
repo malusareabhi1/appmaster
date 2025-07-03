@@ -128,3 +128,33 @@ for trade in trades:
 fig.update_layout(xaxis_rangeslider_visible=False, height=600)
 st.plotly_chart(fig, use_container_width=True)
 
+# 🚀 SCAN ALL STOCKS FOR LATEST CROSSOVER SIGNALS
+st.subheader("📌 NIFTY 100: Latest EMA Crossover Signals")
+
+def check_crossover(stock):
+    df = load_data(stock, timeframe, days)
+    if df.empty or len(df) < 22:
+        return None
+    df['EMA9'] = df['Close'].ewm(span=9, adjust=False).mean()
+    df['EMA21'] = df['Close'].ewm(span=21, adjust=False).mean()
+    df['Signal'] = 0
+    df.loc[df['EMA9'] > df['EMA21'], 'Signal'] = 1
+    df.loc[df['EMA9'] < df['EMA21'], 'Signal'] = -1
+    df['Crossover'] = df['Signal'].diff().fillna(0).astype(int)
+
+    last = df.iloc[-1]
+    if last['Crossover'] == 2:
+        return {'Stock': stock, 'Signal': 'BUY', 'Price': round(last['Close'], 2), 'Time': last.name}
+    elif last['Crossover'] == -2:
+        return {'Stock': stock, 'Signal': 'SELL', 'Price': round(last['Close'], 2), 'Time': last.name}
+    return None
+
+with st.spinner("🔍 Scanning all NIFTY 100 stocks for EMA crossover signals..."):
+    signal_list = [check_crossover(s) for s in nifty_100_stocks]
+    signal_list = [s for s in signal_list if s]
+
+if signal_list:
+    st.success(f"✅ {len(signal_list)} stocks with crossover signals found.")
+    st.dataframe(pd.DataFrame(signal_list))
+else:
+    st.warning("No fresh EMA crossover signals found today.")
