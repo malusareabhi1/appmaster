@@ -65,7 +65,7 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     else:
         df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
-
+    df.columns = [col.lower() for col in df.columns]
     # Market hours filter
     df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
             (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
