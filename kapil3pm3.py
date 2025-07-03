@@ -84,7 +84,7 @@ def filter_last_n_days(df, n_days):
 def generate_trade_logs(df, offset, stoploss_type, stoploss_percent, target_multiplier):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
     breakout_logs, breakdown_logs = [], []
-
+    st.write("Current row keys:", current.index.tolist())
     for i in range(len(df_3pm) - 1):
         current = df_3pm.iloc[i]
         next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
@@ -221,6 +221,7 @@ def plot_cumulative_pnl(df, title):
 
 df = load_nifty_data()
 df = filter_last_n_days(df, analysis_days)
+st.write("Columns in df:", df.columns.tolist())
 breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, stoploss_type, stoploss_percent, target_multiplier)
 
 st.subheader("🕯️ Candlestick Chart")
