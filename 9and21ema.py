@@ -142,12 +142,20 @@ def check_crossover(stock):
     df.loc[df['EMA9'] < df['EMA21'], 'Signal'] = -1
     df['Crossover'] = df['Signal'].diff().fillna(0).astype(int)
 
-    last = df.iloc[-1]
-    if last['Crossover'] == 2:
-        return {'Stock': stock, 'Signal': 'BUY', 'Price': round(last['Close'], 2), 'Time': last.name}
-    elif last['Crossover'] == -2:
-        return {'Stock': stock, 'Signal': 'SELL', 'Price': round(last['Close'], 2), 'Time': last.name}
+    try:
+        crossover_value = int(df['Crossover'].iloc[-1])
+        close_price = df['Close'].iloc[-1]
+        last_time = df.index[-1]
+
+        if crossover_value == 2:
+            return {'Stock': stock, 'Signal': 'BUY', 'Price': round(close_price, 2), 'Time': last_time}
+        elif crossover_value == -2:
+            return {'Stock': stock, 'Signal': 'SELL', 'Price': round(close_price, 2), 'Time': last_time}
+    except:
+        return None
+
     return None
+
 
 with st.spinner("🔍 Scanning all NIFTY 100 stocks for EMA crossover signals..."):
     signal_list = [check_crossover(s) for s in nifty_100_stocks]
