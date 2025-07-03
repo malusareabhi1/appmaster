@@ -45,7 +45,15 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         st.stop()
 
     df.reset_index(inplace=True)
-    #df.columns = [col.lower() for col in df.columns]
+
+    # Fix datetime column
+    if 'index' in df.columns:
+        df.rename(columns={'index': 'datetime'}, inplace=True)
+    elif 'datetime' not in df.columns:
+        st.error("❌ No datetime column found after reset_index().")
+        st.write("🔍 Columns present:", df.columns.tolist())
+        st.stop()
+
     df.columns = [col.lower() if isinstance(col, str) else str(col).lower() for col in df.columns]
 
     df['datetime'] = pd.to_datetime(df['datetime'])
@@ -56,6 +64,7 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
             (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
 
     return df
+
 
 def filter_last_n_days(df, n_days):
     df['date'] = df['datetime'].dt.date
