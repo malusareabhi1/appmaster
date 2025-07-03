@@ -45,7 +45,9 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         st.stop()
 
     df.reset_index(inplace=True)
-    df.columns = [col.lower() for col in df.columns]
+    #df.columns = [col.lower() for col in df.columns]
+    df.columns = [col.lower() if isinstance(col, str) else str(col).lower() for col in df.columns]
+
     df['datetime'] = pd.to_datetime(df['datetime'])
     df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
 
