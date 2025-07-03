@@ -44,15 +44,17 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
         st.error("❌ No data returned from yfinance.")
         st.stop()
 
-    df.reset_index(inplace=True)
+   df.reset_index(inplace=True)
 
-    # Fix datetime column
-    if 'index' in df.columns:
-        df.rename(columns={'index': 'datetime'}, inplace=True)
-    elif 'datetime' not in df.columns:
-        st.error("❌ No datetime column found after reset_index().")
+    # Auto-detect the datetime column after reset_index
+    datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower() or 'index' in col.lower()), None)
+    
+    if not datetime_col:
+        st.error("❌ No datetime-related column found after reset_index().")
         st.write("🔍 Columns present:", df.columns.tolist())
         st.stop()
+    
+    df.rename(columns={datetime_col: 'datetime'}, inplace=True)
 
     df.columns = [col.lower() if isinstance(col, str) else str(col).lower() for col in df.columns]
 
