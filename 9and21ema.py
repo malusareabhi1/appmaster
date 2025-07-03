@@ -45,16 +45,16 @@ position = None
 
 for i in range(1, len(df)):
     row = df.iloc[i]
-    prev_row = df.iloc[i - 1]
 
-    # Buy Signal
-    if row['Crossover'] == 2:
+    # ✔️ Make sure this is scalar!
+    crossover_value = int(row['Crossover'])
+
+    if crossover_value == 2:
         entry_price = row['Close']
         entry_time = row.name
         position = {'entry_price': entry_price, 'entry_time': entry_time}
 
-    # Sell Signal
-    elif row['Crossover'] == -2 and position is not None:
+    elif crossover_value == -2 and position is not None:
         exit_price = row['Close']
         exit_time = row.name
         pnl = round(exit_price - position['entry_price'], 2)
