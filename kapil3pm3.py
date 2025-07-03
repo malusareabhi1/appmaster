@@ -73,6 +73,11 @@ def filter_last_n_days(df, n_days):
 def generate_trade_logs(df, offset, sl_percent):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
     breakout_logs, breakdown_logs = [], []
+    required_cols = ['datetime', 'high', 'low', 'close']
+    missing = [col for col in required_cols if col not in df.columns]
+    if missing:
+        st.error(f"Missing columns: {missing}")
+        st.stop()
 
     for i in range(len(df_3pm) - 1):
         current = df_3pm.iloc[i]
