@@ -43,9 +43,8 @@ df['Crossover'] = df['Signal'].diff()
 trades = []
 position = None
 
-for i, row in df.iterrows():
-    if i == 0:
-        continue
+for i in range(1, len(df)):
+    row = df.iloc[i]
     prev_row = df.iloc[i - 1]
 
     # Buy Signal
@@ -70,6 +69,7 @@ for i, row in df.iterrows():
             'Duration': duration
         })
         position = None
+
 
 # 📋 Show trade summary
 trade_df = pd.DataFrame(trades)
