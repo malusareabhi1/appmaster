@@ -223,7 +223,9 @@ def plot_cumulative_pnl(df, title):
 
 df = load_nifty_data()
 st.write("Columns of df after loading:", df.columns.tolist())
+
 df = filter_last_n_days(df, analysis_days)
+
 st.write("Columns in df:", df.columns.tolist())
 breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, stoploss_type, stoploss_percent, target_multiplier)
 
