@@ -46,12 +46,17 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
 
     df.reset_index(inplace=True)
 
-    # Rename datetime column if needed
-    datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
-    if datetime_col:
-        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+    # Ensure all column names are strings
+    df.columns = [str(col) for col in df.columns]
 
-    # Convert all columns to lowercase (IMPORTANT!)
+    datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
+    if datetime_col is None:
+        st.error("❌ No datetime-like column found.")
+        st.stop()
+
+    df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+    # Convert all columns to lowercase for consistency
     df.columns = [col.lower() for col in df.columns]
 
     df['datetime'] = pd.to_datetime(df['datetime'])
