@@ -85,7 +85,7 @@ def generate_trade_logs(df, offset, stoploss_type, stoploss_percent, target_mult
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
     breakout_logs, breakdown_logs = [], []
     #st.write("Current row keys:", current.index.tolist())
-    print("Current row keys:", current.index.tolist())
+    #print("Current row keys:", current.index.tolist())
 
     for i in range(len(df_3pm) - 1):
         current = df_3pm.iloc[i]
