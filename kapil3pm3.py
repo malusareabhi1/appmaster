@@ -84,7 +84,9 @@ def filter_last_n_days(df, n_days):
 def generate_trade_logs(df, offset, stoploss_type, stoploss_percent, target_multiplier):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
     breakout_logs, breakdown_logs = [], []
-    st.write("Current row keys:", current.index.tolist())
+    #st.write("Current row keys:", current.index.tolist())
+    print("Current row keys:", current.index.tolist())
+
     for i in range(len(df_3pm) - 1):
         current = df_3pm.iloc[i]
         next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
