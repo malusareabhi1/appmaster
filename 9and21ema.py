@@ -43,8 +43,9 @@ df['Crossover'] = df['Signal'].diff()
 trades = []
 position = None
 
-for i in range(1, len(df)):
-    row = df.iloc[i]
+for i, row in df.iterrows():
+    if i == 0:
+        continue
     prev_row = df.iloc[i - 1]
 
     # Buy Signal
