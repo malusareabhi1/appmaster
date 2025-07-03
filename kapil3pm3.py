@@ -41,35 +41,27 @@ st.markdown("""
 def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
     df = yf.download(ticker, interval=interval, period=period, progress=False)
     if df.empty:
-        st.error("❌ No data returned from yfinance.")
+        st.error("No data returned from yfinance.")
         st.stop()
 
     df.reset_index(inplace=True)
+    df.columns = [str(col).lower() for col in df.columns]
 
-    # Ensure all column names are strings
-    df.columns = [str(col) for col in df.columns]
-
-    datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
-    if datetime_col is None:
-        st.error("❌ No datetime-like column found.")
-        st.stop()
-
-    df.rename(columns={datetime_col: 'datetime'}, inplace=True)
-
-    # Convert all columns to lowercase for consistency
-    df.columns = [col.lower() for col in df.columns]
+    if 'datetime' not in df.columns:
+        datetime_col = next((col for col in df.columns if 'date' in col or 'time' in col), None)
+        if datetime_col:
+            df.rename(columns={datetime_col: 'datetime'}, inplace=True)
 
     df['datetime'] = pd.to_datetime(df['datetime'])
-
     if df['datetime'].dt.tz is None:
         df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
     else:
         df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
-    # Filter market hours
     df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) & (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
-    df.columns = [str(col).lower() for col in df.columns]
+
     return df
+
 
 
 
