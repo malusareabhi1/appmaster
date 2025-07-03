@@ -227,6 +227,15 @@ df = load_nifty_data()
 df = filter_last_n_days(df, analysis_days)
 
 #st.write("Columns in df:", df.columns.tolist())
+st.write("Columns in df:", df.columns.tolist())
+
+df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+st.write("Columns in df_3pm:", df_3pm.columns.tolist())
+
+# Also check first row keys explicitly
+if not df_3pm.empty:
+    st.write("Keys in first df_3pm row:", df_3pm.iloc[0].index.tolist())
+
 breakout_df, breakdown_df, df_3pm = generate_trade_logs(df, offset_points, stoploss_type, stoploss_percent, target_multiplier)
 
 st.subheader("🕯️ Candlestick Chart")
