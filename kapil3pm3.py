@@ -46,15 +46,19 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
 
     df.reset_index(inplace=True)
 
-    # Auto-detect the datetime column after reset_index
-    datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower() or 'index' in col.lower()), None)
+    # Ensure all column names are strings
+    df.columns = [str(col) for col in df.columns]
+    
+    # Auto-detect the datetime column
+    datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
     
     if not datetime_col:
-        st.error("❌ No datetime-related column found after reset_index().")
-        st.write("🔍 Columns present:", df.columns.tolist())
+        st.error("❌ No datetime-like column found after reset_index.")
+        st.write("🔍 Columns available:", df.columns.tolist())
         st.stop()
     
     df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
 
     df.columns = [col.lower() if isinstance(col, str) else str(col).lower() for col in df.columns]
 
