@@ -136,3 +136,45 @@ if not trade_logs.empty:
     st.success(f"✅ Total Trades: {len(trade_logs)} | Net P&L: ₹{trade_logs['P&L'].sum():,.2f}")
 else:
     st.warning("No trades met criteria.")
+
+import plotly.graph_objects as go
+
+# ---- Candle Chart Visualization ----
+st.subheader("📊 NIFTY 15-min Candlestick Chart")
+
+# Filter recent day’s data (optional: latest date or a specific day)
+latest_date = df_nifty['Datetime'].dt.date.max()
+plot_data = df_nifty[df_nifty['Datetime'].dt.date == latest_date]
+
+fig = go.Figure(data=[go.Candlestick(
+    x=plot_data['Datetime'],
+    open=plot_data['Open'],
+    high=plot_data['High'],
+    low=plot_data['Low'],
+    close=plot_data['Close'],
+    name="NIFTY 15m"
+)])
+
+# Highlight 3PM candle (previous day)
+prev_date = latest_date - timedelta(days=1)
+candle_3pm = df_nifty[
+    (df_nifty['Datetime'].dt.date == prev_date) &
+    (df_nifty['Datetime'].dt.time == datetime.strptime("15:00", "%H:%M").time())
+]
+
+if not candle_3pm.empty:
+    row = candle_3pm.iloc[0]
+    for label, y in zip(['Open', 'Close'], [row['Open'], row['Close']]):
+        fig.add_hline(y=y, line=dict(dash="dash", color="orange"),
+                      annotation_text=f"3PM {label} ({y:.2f})", annotation_position="top left")
+
+# Update layout
+fig.update_layout(
+    title=f"NIFTY 15-min Candlestick Chart - {latest_date}",
+    xaxis_title="Time",
+    yaxis_title="Price",
+    xaxis_rangeslider_visible=False,
+    height=600
+)
+
+st.plotly_chart(fig, use_container_width=True)
