@@ -349,8 +349,8 @@ df_3pm = df_3pm.rename(columns={
 })
 #st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
 # Plot chart
-#fig = plot_candlestick_chart(df, df_3pm)
-fig = plot_candlestick_chart(df, df_3pm, trade_log_df, breakdown_df)
+fig = plot_candlestick_chart(df, df_3pm)
+#fig = plot_candlestick_chart(df, df_3pm, trade_log_df, breakdown_df)
 
 st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
 st.plotly_chart(fig, use_container_width=True)
