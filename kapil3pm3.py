@@ -240,7 +240,7 @@ def generate_trade_logs(df, offset):
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
 
 
-def plot_candlestick_chart(df, df_3pm, breakout_df, breakdown_df):
+def plot_candlestick_chart(df, df_3pm):
     fig = go.Figure(data=[go.Candlestick(
         x=df['datetime'],
         open=df['open'],
@@ -252,77 +252,47 @@ def plot_candlestick_chart(df, df_3pm, breakout_df, breakdown_df):
 
     fig.update_traces(increasing_line_color='green', decreasing_line_color='red')
 
-    # --- 3PM Lines ---
-    for i in range(len(df_3pm) - 1):
-        start_time = df_3pm.iloc[i]['datetime']
-        end_time = df_3pm.iloc[i + 1]['datetime']
-        high_val = df_3pm.iloc[i]['high']
-        low_val = df_3pm.iloc[i]['low']
+    # Add 3PM High and Low markers
+    fig.add_trace(go.Scatter(
+        x=df_3pm['datetime'],
+        y=df_3pm['high'],
+        mode='markers',
+        name='3PM High',
+        marker=dict(color='orange', size=8, symbol='triangle-up')
+    ))
 
-        fig.add_trace(go.Scatter(
-            x=[start_time, end_time],
-            y=[high_val, high_val],
-            mode='lines',
-            name='3PM High',
-            line=dict(color='orange', width=1.5, dash='dot'),
-            showlegend=(i == 0)
-        ))
+    fig.add_trace(go.Scatter(
+        x=df_3pm['datetime'],
+        y=df_3pm['low'],
+        mode='markers',
+        name='3PM Low',
+        marker=dict(color='cyan', size=8, symbol='triangle-down')
+    ))
 
-        fig.add_trace(go.Scatter(
-            x=[start_time, end_time],
-            y=[low_val, low_val],
-            mode='lines',
-            name='3PM Low',
-            line=dict(color='cyan', width=1.5, dash='dot'),
-            showlegend=(i == 0)
-        ))
-
-    # --- Entry Points (Breakout + Breakdown) ---
-    for df_trade, label, color in [
-        (breakout_df, 'Breakout Entry', 'blue'),
-        (breakdown_df, 'Breakdown Entry', 'blue')
-    ]:
-        entries = df_trade[df_trade['Result'] != '⏳ Still Holding']
-        fig.add_trace(go.Scatter(
-            x=entries['Entry Time'].apply(lambda t: pd.Timestamp.combine(entries['Next Day'], t) if t != '-' else None),
-            y=entries['Entry'],
-            mode='markers',
-            marker=dict(color=color, size=8, symbol='circle'),
-            name=label,
-            showlegend=True
-        ))
-
-    # --- Exit Points (Breakout + Breakdown) ---
-    for df_trade, label, color in [
-        (breakout_df, 'Breakout Exit', 'red'),
-        (breakdown_df, 'Breakdown Exit', 'red')
-    ]:
-        exits = df_trade[df_trade['Result'] != '❌ No Entry']
-        fig.add_trace(go.Scatter(
-            x=exits['Exit Time'].apply(lambda t: pd.Timestamp.combine(exits['Next Day'], t) if t != '-' else None),
-            y=exits['Target'],  # or 'SL' or 'Exit Price' if you add it
-            mode='markers',
-            marker=dict(color=color, size=8, symbol='square'),
-            name=label,
-            showlegend=True
-        ))
+    # Add vertical lines for each 3PM candle
+    for dt in df_3pm['datetime']:
+        fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
 
     fig.update_layout(
-        title="NIFTY 15-Min Chart with Entry/Exit Points",
+        title="NIFTY 15-Min Chart (Last {} Trading Days)".format(analysis_days),
         xaxis_title="DateTime (IST)",
         yaxis_title="Price",
         xaxis_rangeslider_visible=False,
         xaxis=dict(
-            rangebreaks=[dict(bounds=["sat", "mon"]), dict(bounds=[16, 9.15], pattern="hour")],
+            rangebreaks=[
+                dict(bounds=["sat", "mon"]),
+                dict(bounds=[16, 9.15], pattern="hour")
+            ],
             showgrid=False
         ),
         yaxis=dict(showgrid=True),
         plot_bgcolor='black',
         paper_bgcolor='black',
         font=dict(color='white'),
-        height=700
+        height=600
     )
     return fig
+
 
 
 def show_trade_metrics(df, label):
