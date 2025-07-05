@@ -138,7 +138,8 @@ else:
     st.warning("No trades met criteria.")
 
 
-df.columns = df.columns.get_level_values(-1)
+df_nifty.columns = df_nifty.columns.get_level_values(-1)
+
 # ---- Candle Chart Visualization for All Days ----
 st.subheader("📊 NIFTY 15-min Candlestick Chart (All Analyzed Days)")
 
