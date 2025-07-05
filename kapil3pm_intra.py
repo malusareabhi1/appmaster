@@ -268,6 +268,29 @@ def plot_candlestick_chart(df, df_3pm):
     )
     return fig
 
+def simulate_paper_trades(trade_df, initial_capital, risk_pct):
+    trade_df = trade_df.copy()
+    capital = initial_capital
+    capital_log = []
+
+    for i, row in trade_df.iterrows():
+        entry_price = row['Entry']
+        sl = row['SL']
+        risk_per_unit = abs(entry_price - sl)
+        risk_amount = capital * (risk_pct / 100)
+
+        qty = int(risk_amount / risk_per_unit) if risk_per_unit != 0 else 0
+        capital_used = qty * entry_price
+        pnl = row['P&L'] * qty
+        capital += pnl  # Update capital with P&L
+
+        trade_df.at[i, 'Qty'] = qty
+        trade_df.at[i, 'Capital Used'] = round(capital_used, 2)
+        trade_df.at[i, 'Realized P&L'] = round(pnl, 2)
+        trade_df.at[i, 'Capital After Trade'] = round(capital, 2)
+
+    return trade_df
+
 
 def show_trade_metrics(df, label):
     total_trades = len(df)
@@ -312,6 +335,12 @@ if missing_cols:
 
 
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
+
+
+trade_log_df = simulate_paper_trades(trade_log_df, initial_capital, risk_per_trade_pct)
+breakdown_df = simulate_paper_trades(breakdown_df, initial_capital, risk_per_trade_pct)
+
+
 #st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
 df_3pm = df_3pm.rename(columns={
     'datetime': 'datetime',
@@ -387,5 +416,13 @@ st.plotly_chart(
     px.pie(names=result_counts.index, values=result_counts.values, title="Breakout Trade Outcomes")
 )
 
+
+def show_paper_summary(df, title):
+    total_pnl = df['Realized P&L'].sum()
+    last_cap = df['Capital After Trade'].iloc[-1]
+    st.info(f"📊 {title} – Realized P&L: ₹{total_pnl:,.2f}, Final Capital: ₹{last_cap:,.2f}")
+
+show_paper_summary(trade_log_df, "Breakout Strategy")
+show_paper_summary(breakdown_df, "Breakdown Strategy")
 
                                     
