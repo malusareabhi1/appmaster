@@ -137,14 +137,11 @@ if not trade_logs.empty:
 else:
     st.warning("No trades met criteria.")
 
-import plotly.graph_objects as go
+# ---- Candle Chart Visualization for All Days ----
+st.subheader("📊 NIFTY 15-min Candlestick Chart (All Analyzed Days)")
 
-# ---- Candle Chart Visualization ----
-st.subheader("📊 NIFTY 15-min Candlestick Chart")
-
-# Filter recent day’s data (optional: latest date or a specific day)
-latest_date = df_nifty['Datetime'].dt.date.max()
-plot_data = df_nifty[df_nifty['Datetime'].dt.date == latest_date]
+# Plot full data based on selected analysis_days
+plot_data = df_nifty.copy()
 
 fig = go.Figure(data=[go.Candlestick(
     x=plot_data['Datetime'],
@@ -155,26 +152,24 @@ fig = go.Figure(data=[go.Candlestick(
     name="NIFTY 15m"
 )])
 
-# Highlight 3PM candle (previous day)
-prev_date = latest_date - timedelta(days=1)
-candle_3pm = df_nifty[
-    (df_nifty['Datetime'].dt.date == prev_date) &
-    (df_nifty['Datetime'].dt.time == datetime.strptime("15:00", "%H:%M").time())
-]
+# Add vertical markers for 3PM candles
+for i in range(1, len(plot_data)):
+    if plot_data.iloc[i]['Datetime'].time() == datetime.strptime("15:00", "%H:%M").time():
+        dt = plot_data.iloc[i]['Datetime']
+        o = plot_data.iloc[i]['Open']
+        c = plot_data.iloc[i]['Close']
+        # Mark horizontal lines for Open and Close of 3PM candle
+        fig.add_hline(y=o, line=dict(dash="dot", color="blue"),
+                      annotation_text=f"3PM Open ({dt.date()})", annotation_position="top left")
+        fig.add_hline(y=c, line=dict(dash="dot", color="green"),
+                      annotation_text=f"3PM Close ({dt.date()})", annotation_position="top right")
 
-if not candle_3pm.empty:
-    row = candle_3pm.iloc[0]
-    for label, y in zip(['Open', 'Close'], [row['Open'], row['Close']]):
-        fig.add_hline(y=y, line=dict(dash="dash", color="orange"),
-                      annotation_text=f"3PM {label} ({y:.2f})", annotation_position="top left")
-
-# Update layout
 fig.update_layout(
-    title=f"NIFTY 15-min Candlestick Chart - {latest_date}",
-    xaxis_title="Time",
+    title=f"NIFTY 15-min Candlestick Chart – Last {analysis_days} Days",
+    xaxis_title="Datetime",
     yaxis_title="Price",
     xaxis_rangeslider_visible=False,
-    height=600
+    height=700
 )
 
 st.plotly_chart(fig, use_container_width=True)
