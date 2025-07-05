@@ -341,6 +341,10 @@ trade_log_df, breakdown_df = generate_trade_logs(df, offset_points)
 trade_log_df = simulate_paper_trades(trade_log_df, initial_capital, risk_per_trade_pct)
 breakdown_df = simulate_paper_trades(breakdown_df, initial_capital, risk_per_trade_pct)
 
+# 🔁 Simulate paper trading
+paper_trade_log_df = simulate_paper_trades(trade_log_df, initial_capital, risk_per_trade_pct)
+paper_breakdown_df = simulate_paper_trades(breakdown_df, initial_capital, risk_per_trade_pct)
+
 
 #st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
 df_3pm = df_3pm.rename(columns={
