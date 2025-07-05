@@ -91,112 +91,80 @@ def filter_last_n_days(df, n_days):
 
 def generate_trade_logs(df, offset):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
-    breakout_logs = []
-    breakdown_logs = []
+    trade_logs = []
 
     for i in range(len(df_3pm) - 1):
         current = df_3pm.iloc[i]
         next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
 
-        threepm_high = current['high']
-        threepm_low = current['low']
+        threepm_open = current['open']
         threepm_close = current['close']
 
-        entry_breakout = threepm_high + offset
-        sl_breakout = round(entry_breakout * 0.95, 2)
-        target_breakout = round(entry_breakout + (entry_breakout - sl_breakout) * 1.5, 2)
+        # Filter next day data from 9:15 to 11:30
+        next_day_data = df[(df['datetime'].dt.date == next_day_date) &
+                           (df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                           (df['datetime'].dt.time <= pd.to_datetime("11:30").time())].copy()
 
-        entry_breakdown = threepm_close
-        sl_breakdown = round(entry_breakdown * 1.05, 2)
-        target_breakdown = round(entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5, 2)
+        if next_day_data.empty:
+            continue
 
-        next_day_data = df[df['datetime'].dt.date == next_day_date].copy()
         candle_930 = next_day_data[next_day_data['datetime'].dt.time == pd.to_datetime("09:30").time()]
-        candle_1130 = next_day_data[next_day_data['datetime'].dt.time == pd.to_datetime("11:30").time()]
-
-        if candle_930.empty or candle_1130.empty:
+        if candle_930.empty:
             continue
 
         row_930 = candle_930.iloc[0]
-        after_930 = next_day_data[next_day_data['datetime'] >= row_930['datetime']]
-        entry_time = row_930['datetime']
-        exit_time = None
-        entry_taken = False
+        nifty_930 = row_930['close']
 
-        # ----------- Breakout Logic -----------
-        if row_930['high'] >= entry_breakout:
-            entry_price = entry_breakout
-            entry_taken = True
-            for k, row in after_930.iterrows():
-                if row['low'] <= sl_breakout:
-                    exit_price = sl_breakout
-                    exit_time = row['datetime']
-                    result = '🛑 Stop Loss Hit'
-                    break
-                elif row['datetime'].time() >= pd.to_datetime("11:30").time():
-                    exit_price = row['close']
-                    exit_time = row['datetime']
-                    result = '⏰ Time Exit'
-                    break
-            else:
-                exit_price = after_930.iloc[-1]['close']
-                exit_time = after_930.iloc[-1]['datetime']
-                result = '⏰ Time Exit'
+        # ✅ Entry condition: NIFTY > 3PM Open and Close
+        if nifty_930 > threepm_open and nifty_930 > threepm_close:
+            ce_entry_price = row_930['close']  # Simulated ATM CE price = NIFTY close (for paper trade)
 
-            pnl = round(exit_price - entry_price, 2)
-            breakout_logs.append({
+            nifty_target = nifty_930 + 50
+            ce_sl_price = ce_entry_price * 0.95
+
+            trade_active = True
+            exit_reason = '⏰ Time Exit'
+            ce_exit_price = ce_entry_price  # default fallback
+            entry_time = row_930['datetime']
+            exit_time = None
+
+            for j in range(next_day_data.index.get_loc(row_930.name), len(next_day_data)):
+                curr = next_day_data.iloc[j]
+                curr_nifty = curr['close']
+
+                if curr_nifty >= nifty_target:
+                    ce_exit_price = ce_entry_price + (50 * 1)  # Assume CE moves 1 point per 1 NIFTY point
+                    exit_time = curr['datetime']
+                    exit_reason = '🎯 Target Hit'
+                    break
+                elif ce_exit_price <= ce_sl_price:
+                    ce_exit_price = ce_sl_price
+                    exit_time = curr['datetime']
+                    exit_reason = '🛑 Stop Loss Hit'
+                    break
+                elif curr['datetime'].time() >= pd.to_datetime("11:00").time():
+                    ce_exit_price = curr['close']  # NIFTY as proxy CE price
+                    exit_time = curr['datetime']
+                    break
+
+            pnl = round(ce_exit_price - ce_entry_price, 2)
+
+            trade_logs.append({
                 '3PM Date': current['datetime'].date(),
                 'Next Day': next_day_date,
-                '3PM High': round(threepm_high, 2),
-                'Entry': entry_price,
-                'SL': sl_breakout,
-                'Target': target_breakout,
-                'Entry Time': entry_time.time(),
-                'Exit Time': exit_time.time(),
-                'Result': result,
-                'P&L': pnl
-            })
-
-        # ----------- Breakdown Logic -----------
-        elif row_930['low'] <= entry_breakdown:
-            entry_price = entry_breakdown
-            entry_taken = True
-            for k, row in after_930.iterrows():
-                if row['high'] >= sl_breakdown:
-                    exit_price = sl_breakdown
-                    exit_time = row['datetime']
-                    result = '🛑 Stop Loss Hit'
-                    break
-                elif row['datetime'].time() >= pd.to_datetime("11:30").time():
-                    exit_price = row['close']
-                    exit_time = row['datetime']
-                    result = '⏰ Time Exit'
-                    break
-            else:
-                exit_price = after_930.iloc[-1]['close']
-                exit_time = after_930.iloc[-1]['datetime']
-                result = '⏰ Time Exit'
-
-            pnl = round(entry_price - exit_price, 2)
-            breakdown_logs.append({
-                '3PM Date': current['datetime'].date(),
-                'Next Day': next_day_date,
+                '3PM Open': round(threepm_open, 2),
                 '3PM Close': round(threepm_close, 2),
-                'Entry': entry_price,
-                'SL': sl_breakdown,
-                'Target': target_breakdown,
+                'NIFTY@9:30': round(nifty_930, 2),
                 'Entry Time': entry_time.time(),
-                'Exit Time': exit_time.time(),
-                'Result': result,
+                'Exit Time': exit_time.time() if exit_time else '-',
+                'CE Entry': round(ce_entry_price, 2),
+                'CE Exit': round(ce_exit_price, 2),
+                'Result': exit_reason,
                 'P&L': pnl
             })
 
-        # ----------- No Trade -----------
-        # Don’t log anything if neither breakout nor breakdown
-
-    breakout_df = pd.DataFrame(breakout_logs)
-    breakdown_df = pd.DataFrame(breakdown_logs)
-    return breakout_df, breakdown_df
+    trade_df = pd.DataFrame(trade_logs)
+    return trade_df, pd.DataFrame()  # Second return kept for compatibility (breakdown_df unused here)
 
 
 
