@@ -253,30 +253,28 @@ def plot_candlestick_chart(df, df_3pm):
 
     fig.update_traces(increasing_line_color='green', decreasing_line_color='red')
 
-    # ✅ Draw horizontal lines from 3PM high/low to next day 3PM
+    # 🚀 Add horizontal lines from 3PM to next day 3PM
     for i in range(len(df_3pm) - 1):
         start_time = df_3pm.iloc[i]['datetime']
         end_time = df_3pm.iloc[i + 1]['datetime']
         high_val = df_3pm.iloc[i]['high']
         low_val = df_3pm.iloc[i]['low']
 
-        # High line
         fig.add_trace(go.Scatter(
             x=[start_time, end_time],
             y=[high_val, high_val],
             mode='lines',
             name='3PM High',
-            line=dict(color='orange', width=1.2, dash='dot'),
-            showlegend=(i == 0)
+            line=dict(color='orange', width=1.5, dash='dot'),
+            showlegend=(i == 0)  # Show legend only once
         ))
 
-        # Low line
         fig.add_trace(go.Scatter(
             x=[start_time, end_time],
             y=[low_val, low_val],
             mode='lines',
             name='3PM Low',
-            line=dict(color='cyan', width=1.2, dash='dot'),
+            line=dict(color='cyan', width=1.5, dash='dot'),
             showlegend=(i == 0)
         ))
 
@@ -299,7 +297,6 @@ def plot_candlestick_chart(df, df_3pm):
         height=600
     )
     return fig
-
 
 
 
