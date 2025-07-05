@@ -127,6 +127,8 @@ def generate_trade_logs(df):
 
 # Load and simulate
 df_nifty = load_nifty_data()
+st.write("Actual Columns:", df_nifty.columns.tolist())
+
 trade_logs = generate_trade_logs(df_nifty)
 
 # Show results
