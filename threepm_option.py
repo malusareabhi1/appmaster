@@ -180,3 +180,6 @@ if 'Datetime' in plot_data.columns:
 
 else:
     st.error("❌ 'Datetime' column not found in data.")
+
+st.write("Preview of Plot Data", plot_data.head())
+
