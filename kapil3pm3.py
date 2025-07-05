@@ -235,7 +235,11 @@ def generate_trade_logs(df, offset):
         entered = False
         for idx in range(i + 1, len(df_3pm)):
             next_date = df_3pm.iloc[idx]['datetime'].date()
-            day_data = df[df['datetime'].dt.date == next_date]
+            #day_data = df[df['datetime'].dt.date == next_date]
+            day_data = df[(df['datetime'].dt.date == next_date) & 
+              (df['datetime'].dt.time >= pd.to_datetime("09:20").time())]
+
+            
             if not entered:
                 intraday = day_data[day_data['high'] >= entry_breakout]
                 if not intraday.empty:
