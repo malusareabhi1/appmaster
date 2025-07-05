@@ -103,74 +103,101 @@ def generate_trade_logs(df, offset):
         threepm_close = current['close']
 
         entry_breakout = threepm_high + offset
-        sl_breakout = threepm_low
-        target_breakout = entry_breakout + (entry_breakout - sl_breakout) * 1.5
+        sl_breakout = round(entry_breakout * 0.95, 2)
+        target_breakout = round(entry_breakout + (entry_breakout - sl_breakout) * 1.5, 2)
 
         entry_breakdown = threepm_close
-        sl_breakdown = threepm_high
-        target_breakdown = entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5
+        sl_breakdown = round(entry_breakdown * 1.05, 2)
+        target_breakdown = round(entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5, 2)
 
-        # Get only 9:30 AM and 11:30 AM candles for the next day
         next_day_data = df[df['datetime'].dt.date == next_day_date].copy()
         candle_930 = next_day_data[next_day_data['datetime'].dt.time == pd.to_datetime("09:30").time()]
         candle_1130 = next_day_data[next_day_data['datetime'].dt.time == pd.to_datetime("11:30").time()]
 
         if candle_930.empty or candle_1130.empty:
-            continue  # Skip if either candle is missing
+            continue
 
         row_930 = candle_930.iloc[0]
-        row_1130 = candle_1130.iloc[0]
-
+        after_930 = next_day_data[next_day_data['datetime'] >= row_930['datetime']]
         entry_time = row_930['datetime']
-        exit_time = row_1130['datetime']
+        exit_time = None
         entry_taken = False
 
-        # ---- Breakout Logic (only check 9:30 candle) ----
+        # ----------- Breakout Logic -----------
         if row_930['high'] >= entry_breakout:
             entry_price = entry_breakout
-            exit_price = row_1130['close']
-            pnl = round(exit_price - entry_price, 2)
             entry_taken = True
+            for k, row in after_930.iterrows():
+                if row['low'] <= sl_breakout:
+                    exit_price = sl_breakout
+                    exit_time = row['datetime']
+                    result = '🛑 Stop Loss Hit'
+                    break
+                elif row['datetime'].time() >= pd.to_datetime("11:30").time():
+                    exit_price = row['close']
+                    exit_time = row['datetime']
+                    result = '⏰ Time Exit'
+                    break
+            else:
+                exit_price = after_930.iloc[-1]['close']
+                exit_time = after_930.iloc[-1]['datetime']
+                result = '⏰ Time Exit'
 
+            pnl = round(exit_price - entry_price, 2)
             breakout_logs.append({
                 '3PM Date': current['datetime'].date(),
                 'Next Day': next_day_date,
                 '3PM High': round(threepm_high, 2),
-                'Entry': round(entry_breakout, 2),
-                'SL': round(sl_breakout, 2),
-                'Target': round(target_breakout, 2),
+                'Entry': entry_price,
+                'SL': sl_breakout,
+                'Target': target_breakout,
                 'Entry Time': entry_time.time(),
                 'Exit Time': exit_time.time(),
-                'Result': '⏰ Time Exit',
+                'Result': result,
                 'P&L': pnl
             })
 
-        # ---- Breakdown Logic (only if breakout not taken) ----
+        # ----------- Breakdown Logic -----------
         elif row_930['low'] <= entry_breakdown:
             entry_price = entry_breakdown
-            exit_price = row_1130['close']
-            pnl = round(entry_price - exit_price, 2)
             entry_taken = True
+            for k, row in after_930.iterrows():
+                if row['high'] >= sl_breakdown:
+                    exit_price = sl_breakdown
+                    exit_time = row['datetime']
+                    result = '🛑 Stop Loss Hit'
+                    break
+                elif row['datetime'].time() >= pd.to_datetime("11:30").time():
+                    exit_price = row['close']
+                    exit_time = row['datetime']
+                    result = '⏰ Time Exit'
+                    break
+            else:
+                exit_price = after_930.iloc[-1]['close']
+                exit_time = after_930.iloc[-1]['datetime']
+                result = '⏰ Time Exit'
 
+            pnl = round(entry_price - exit_price, 2)
             breakdown_logs.append({
                 '3PM Date': current['datetime'].date(),
                 'Next Day': next_day_date,
                 '3PM Close': round(threepm_close, 2),
-                'Entry': round(entry_breakdown, 2),
-                'SL': round(sl_breakdown, 2),
-                'Target': round(target_breakdown, 2),
+                'Entry': entry_price,
+                'SL': sl_breakdown,
+                'Target': target_breakdown,
                 'Entry Time': entry_time.time(),
                 'Exit Time': exit_time.time(),
-                'Result': '⏰ Time Exit',
+                'Result': result,
                 'P&L': pnl
             })
 
-        # ---- No Trade ----
-        # If neither breakout nor breakdown occurred, skip adding anything
+        # ----------- No Trade -----------
+        # Don’t log anything if neither breakout nor breakdown
 
     breakout_df = pd.DataFrame(breakout_logs)
     breakdown_df = pd.DataFrame(breakdown_logs)
     return breakout_df, breakdown_df
+
 
 
 
