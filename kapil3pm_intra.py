@@ -102,18 +102,18 @@ def generate_trade_logs(df, offset):
         threepm_close = current['close']
         threepm_low = current['low']
 
-        # Breakout targets and stops
+        # Breakout parameters
         entry_breakout = threepm_high + offset
         sl_breakout = threepm_low
         target_breakout = entry_breakout + (entry_breakout - sl_breakout) * 1.5
 
-        # Breakdown targets and stops
+        # Breakdown parameters
         entry_breakdown = threepm_close
         sl_breakdown = threepm_high
         target_breakdown = entry_breakdown - (sl_breakdown - entry_breakdown) * 1.5
 
-        next_day_data = df[(df['datetime'].dt.date == next_day_date) & 
-                           (df['datetime'].dt.time >= pd.to_datetime("09:30").time())].copy()
+        next_day_data = df[(df['datetime'].dt.date == next_day_date) &
+                           (df['datetime'].dt.time > pd.to_datetime("09:30").time())].copy()
         next_day_data.sort_values('datetime', inplace=True)
 
         # --- Breakout Logic ---
@@ -127,11 +127,11 @@ def generate_trade_logs(df, offset):
 
             if not target_hit.empty:
                 breakout_result = '🎯 Target Hit'
-                exit_price = target_breakout
+                exit_price = target_hit.iloc[0]['high']
                 exit_time = target_hit.iloc[0]['datetime']
             elif not sl_hit.empty:
                 breakout_result = '🛑 Stop Loss Hit'
-                exit_price = sl_breakout
+                exit_price = sl_hit.iloc[0]['low']
                 exit_time = sl_hit.iloc[0]['datetime']
             else:
                 breakout_result = '⏰ Time Exit'
@@ -139,24 +139,19 @@ def generate_trade_logs(df, offset):
                 exit_time = after_entry.iloc[-1]['datetime']
 
             pnl = round(exit_price - entry_breakout, 2)
-        else:
-            entry_time = None
-            exit_time = None
-            breakout_result = '❌ No Entry'
-            pnl = 0.0
 
-        breakout_logs.append({
-            '3PM Date': current['datetime'].date(),
-            'Next Day': next_day_date,
-            '3PM High': round(threepm_high, 2),
-            'Entry': round(entry_breakout, 2),
-            'SL': round(sl_breakout, 2),
-            'Target': round(target_breakout, 2),
-            'Entry Time': entry_time.time() if entry_time else '-',
-            'Exit Time': exit_time.time() if exit_time else '-',
-            'Result': breakout_result,
-            'P&L': pnl
-        })
+            breakout_logs.append({
+                '3PM Date': current['datetime'].date(),
+                'Next Day': next_day_date,
+                '3PM High': round(threepm_high, 2),
+                'Entry': round(entry_breakout, 2),
+                'SL': round(sl_breakout, 2),
+                'Target': round(target_breakout, 2),
+                'Entry Time': entry_time.time(),
+                'Exit Time': exit_time.time(),
+                'Result': breakout_result,
+                'P&L': pnl
+            })
 
         # --- Breakdown Logic ---
         crossed_down = False
@@ -178,11 +173,11 @@ def generate_trade_logs(df, offset):
 
                 if not target_hit.empty:
                     breakdown_result = '🎯 Target Hit'
-                    exit_price = target_breakdown
+                    exit_price = target_hit.iloc[0]['low']
                     exit_time = target_hit.iloc[0]['datetime']
                 elif not sl_hit.empty:
                     breakdown_result = '🛑 Stop Loss Hit'
-                    exit_price = sl_breakdown
+                    exit_price = sl_hit.iloc[0]['high']
                     exit_time = sl_hit.iloc[0]['datetime']
                 else:
                     breakdown_result = '⏰ Time Exit'
@@ -190,27 +185,25 @@ def generate_trade_logs(df, offset):
                     exit_time = after_entry.iloc[-1]['datetime']
 
                 pnl = round(entry_breakdown - exit_price, 2)
-                break
-        else:
-            breakdown_result = '❌ No Entry'
-            pnl = 0.0
 
-        breakdown_logs.append({
-            '3PM Date': current['datetime'].date(),
-            'Next Day': next_day_date,
-            '3PM Close': round(threepm_close, 2),
-            'Entry': round(entry_breakdown, 2),
-            'SL': round(sl_breakdown, 2),
-            'Target': round(target_breakdown, 2),
-            'Entry Time': entry_time.time() if entry_time else '-',
-            'Exit Time': exit_time.time() if exit_time else '-',
-            'Result': breakdown_result,
-            'P&L': pnl
-        })
+                breakdown_logs.append({
+                    '3PM Date': current['datetime'].date(),
+                    'Next Day': next_day_date,
+                    '3PM Close': round(threepm_close, 2),
+                    'Entry': round(entry_breakdown, 2),
+                    'SL': round(sl_breakdown, 2),
+                    'Target': round(target_breakdown, 2),
+                    'Entry Time': entry_time.time(),
+                    'Exit Time': exit_time.time(),
+                    'Result': breakdown_result,
+                    'P&L': pnl
+                })
+                break  # Stop after first valid breakdown entry
 
     breakout_df = pd.DataFrame(breakout_logs)
     breakdown_df = pd.DataFrame(breakdown_logs)
     return breakout_df, breakdown_df
+
 
 def plot_candlestick_chart(df, df_3pm):
     fig = go.Figure(data=[go.Candlestick(
