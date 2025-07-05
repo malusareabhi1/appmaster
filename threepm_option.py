@@ -140,36 +140,43 @@ else:
 # ---- Candle Chart Visualization for All Days ----
 st.subheader("📊 NIFTY 15-min Candlestick Chart (All Analyzed Days)")
 
-# Plot full data based on selected analysis_days
 plot_data = df_nifty.copy()
 
-fig = go.Figure(data=[go.Candlestick(
-    x=plot_data['Datetime'],
-    open=plot_data['Open'],
-    high=plot_data['High'],
-    low=plot_data['Low'],
-    close=plot_data['Close'],
-    name="NIFTY 15m"
-)])
+# Ensure 'Datetime' column exists and is datetime type
+if 'Datetime' in plot_data.columns:
+    plot_data['Datetime'] = pd.to_datetime(plot_data['Datetime'])
 
-# Add vertical markers for 3PM candles
-for i in range(1, len(plot_data)):
-    if plot_data.iloc[i]['Datetime'].time() == datetime.strptime("15:00", "%H:%M").time():
-        dt = plot_data.iloc[i]['Datetime']
-        o = plot_data.iloc[i]['Open']
-        c = plot_data.iloc[i]['Close']
-        # Mark horizontal lines for Open and Close of 3PM candle
+    fig = go.Figure(data=[go.Candlestick(
+        x=plot_data['Datetime'],
+        open=plot_data['Open'],
+        high=plot_data['High'],
+        low=plot_data['Low'],
+        close=plot_data['Close'],
+        name="NIFTY 15m"
+    )])
+
+    # Add horizontal lines for 3PM candle Open/Close
+    candle_time = datetime.strptime("15:00", "%H:%M").time()
+    three_pm_candles = plot_data[plot_data['Datetime'].dt.time == candle_time]
+
+    for _, row in three_pm_candles.iterrows():
+        dt = row['Datetime']
+        o = row['Open']
+        c = row['Close']
         fig.add_hline(y=o, line=dict(dash="dot", color="blue"),
                       annotation_text=f"3PM Open ({dt.date()})", annotation_position="top left")
         fig.add_hline(y=c, line=dict(dash="dot", color="green"),
                       annotation_text=f"3PM Close ({dt.date()})", annotation_position="top right")
 
-fig.update_layout(
-    title=f"NIFTY 15-min Candlestick Chart – Last {analysis_days} Days",
-    xaxis_title="Datetime",
-    yaxis_title="Price",
-    xaxis_rangeslider_visible=False,
-    height=700
-)
+    fig.update_layout(
+        title=f"NIFTY 15-min Candlestick Chart – Last {analysis_days} Days",
+        xaxis_title="Datetime",
+        yaxis_title="Price",
+        xaxis_rangeslider_visible=False,
+        height=700
+    )
 
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
+
+else:
+    st.error("❌ 'Datetime' column not found in data.")
