@@ -146,7 +146,7 @@ df_nifty.columns = df_nifty.columns.get_level_values(-1)
 st.subheader("📊 NIFTY 15-min Candlestick Chart (All Analyzed Days)")
 
 plot_data = df_nifty.copy()
-st.write("Actual Columns:", plot_data.columns.tolist())
+st.write("Actual Columns:", df_nifty.columns.tolist())
 #st.write("Preview of Plot Data", plot_data.head())
 # Ensure 'Datetime' column exists and is datetime type
 if 'Datetime' in plot_data.columns:
