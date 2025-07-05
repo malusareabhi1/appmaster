@@ -421,6 +421,36 @@ def show_paper_summary(df, title):
     st.info(f"📊 {title} – Realized P&L: ₹{total_pnl:,.2f}, Final Capital: ₹{last_cap:,.2f}")
 
 show_paper_summary(trade_log_df, "Breakout Strategy")
+st.subheader("📘 Breakout Trades – Paper Trading Log")
+st.dataframe(
+    paper_trade_log_df[
+        ['3PM Date', 'Entry', 'SL', 'Target', 'Qty', 'Capital Used', 'Realized P&L', 'Capital After Trade', 'Result']
+    ].style.applymap(color_pnl, subset=['Realized P&L'])
+)
+
+
 show_paper_summary(breakdown_df, "Breakdown Strategy")
+st.subheader("📉 Breakdown Trades – Paper Trading Log")
+st.dataframe(
+    paper_breakdown_df[
+        ['3PM Date', 'Entry', 'SL', 'Target', 'Qty', 'Capital Used', 'Realized P&L', 'Capital After Trade', 'Result']
+    ].style.applymap(color_pnl, subset=['Realized P&L'])
+)
+
+st.download_button(
+    label="📥 Download Breakout Paper Log",
+    data=paper_trade_log_df.to_csv(index=False),
+    file_name="nifty_3pm_breakout_paper_log.csv",
+    mime="text/csv",
+    key="paper_breakout_csv"
+)
+
+st.download_button(
+    label="📥 Download Breakdown Paper Log",
+    data=paper_breakdown_df.to_csv(index=False),
+    file_name="nifty_3pm_breakdown_paper_log.csv",
+    mime="text/csv",
+    key="paper_breakdown_csv"
+)
 
                                     
