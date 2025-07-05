@@ -12,6 +12,11 @@ st.sidebar.header("Settings")
 offset_points = st.sidebar.number_input("Offset Points for Breakout/Breakdown", value=100, step=10)
 analysis_days = st.sidebar.slider("Number of Days to Analyze", min_value=10, max_value=90, value=60, step=5)
 
+st.sidebar.subheader("💼 Paper Trading Settings")
+initial_capital = st.sidebar.number_input("Starting Capital (₹)", value=100000, step=10000)
+risk_per_trade_pct = st.sidebar.slider("Risk per Trade (%)", min_value=0.5, max_value=5.0, value=2.0, step=0.5)
+
+
 st.markdown("""
 ## 📘 Strategy Explanation
 
