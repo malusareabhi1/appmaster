@@ -269,9 +269,7 @@ def plot_candlestick_chart(df, df_3pm):
         marker=dict(color='cyan', size=8, symbol='triangle-down')
     ))
 
-    # Add vertical lines for each 3PM candle
-    for dt in df_3pm['datetime']:
-        fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
+    # 🚫 Removed vertical lines section
 
     fig.update_layout(
         title="NIFTY 15-Min Chart (Last {} Trading Days)".format(analysis_days),
