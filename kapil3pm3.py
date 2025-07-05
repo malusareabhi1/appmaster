@@ -82,6 +82,7 @@ def filter_last_n_days(df, n_days):
     filtered_df = df[df['date'].isin(last_days)].copy()
     filtered_df.drop(columns='date', inplace=True)
     return filtered_df
+    
 """
 def generate_trade_logs(df, offset):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
@@ -206,6 +207,7 @@ def generate_trade_logs(df, offset):
     breakdown_df = pd.DataFrame(breakdown_logs)
     return breakout_df, breakdown_df
 """
+
 def generate_trade_logs(df, offset):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
     breakout_logs = []
