@@ -412,10 +412,7 @@ def plot_cumulative_pnl(df, title):
 st.plotly_chart(plot_cumulative_pnl(trade_log_df, "Breakout – Cumulative P&L Over Time"))
 st.plotly_chart(plot_cumulative_pnl(breakdown_df, "Breakdown – Cumulative P&L Over Time"))
 #st.plotly_chart(plot_cumulative_pnl(trade_log
-result_counts = trade_log_df['Result'].value_counts()
-st.plotly_chart(
-    px.pie(names=result_counts.index, values=result_counts.values, title="Breakout Trade Outcomes")
-)
+
 
 
 def show_paper_summary(df, title):
