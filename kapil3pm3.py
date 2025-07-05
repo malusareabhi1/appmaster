@@ -252,24 +252,30 @@ def plot_candlestick_chart(df, df_3pm):
 
     fig.update_traces(increasing_line_color='green', decreasing_line_color='red')
 
-    # Add 3PM High and Low markers
-    fig.add_trace(go.Scatter(
-        x=df_3pm['datetime'],
-        y=df_3pm['high'],
-        mode='markers',
-        name='3PM High',
-        marker=dict(color='orange', size=8, symbol='triangle-up')
-    ))
+    # 🚀 Add horizontal lines from 3PM to next day 3PM
+    for i in range(len(df_3pm) - 1):
+        start_time = df_3pm.iloc[i]['datetime']
+        end_time = df_3pm.iloc[i + 1]['datetime']
+        high_val = df_3pm.iloc[i]['high']
+        low_val = df_3pm.iloc[i]['low']
 
-    fig.add_trace(go.Scatter(
-        x=df_3pm['datetime'],
-        y=df_3pm['low'],
-        mode='markers',
-        name='3PM Low',
-        marker=dict(color='cyan', size=8, symbol='triangle-down')
-    ))
+        fig.add_trace(go.Scatter(
+            x=[start_time, end_time],
+            y=[high_val, high_val],
+            mode='lines',
+            name='3PM High',
+            line=dict(color='orange', width=1.5, dash='dot'),
+            showlegend=(i == 0)  # Show legend only once
+        ))
 
-    # 🚫 Removed vertical lines section
+        fig.add_trace(go.Scatter(
+            x=[start_time, end_time],
+            y=[low_val, low_val],
+            mode='lines',
+            name='3PM Low',
+            line=dict(color='cyan', width=1.5, dash='dot'),
+            showlegend=(i == 0)
+        ))
 
     fig.update_layout(
         title="NIFTY 15-Min Chart (Last {} Trading Days)".format(analysis_days),
