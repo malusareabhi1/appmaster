@@ -240,7 +240,7 @@ def generate_trade_logs(df, offset):
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
 
 
-def plot_candlestick_chart(df, df_3pm):
+def plot_candlestick_chart(df, df_3pm, breakout_df, breakdown_df):
     fig = go.Figure(data=[go.Candlestick(
         x=df['datetime'],
         open=df['open'],
@@ -252,7 +252,7 @@ def plot_candlestick_chart(df, df_3pm):
 
     fig.update_traces(increasing_line_color='green', decreasing_line_color='red')
 
-    # 🚀 Add horizontal lines from 3PM to next day 3PM
+    # --- 3PM Lines ---
     for i in range(len(df_3pm) - 1):
         start_time = df_3pm.iloc[i]['datetime']
         end_time = df_3pm.iloc[i + 1]['datetime']
@@ -265,7 +265,7 @@ def plot_candlestick_chart(df, df_3pm):
             mode='lines',
             name='3PM High',
             line=dict(color='orange', width=1.5, dash='dot'),
-            showlegend=(i == 0)  # Show legend only once
+            showlegend=(i == 0)
         ))
 
         fig.add_trace(go.Scatter(
@@ -277,23 +277,50 @@ def plot_candlestick_chart(df, df_3pm):
             showlegend=(i == 0)
         ))
 
+    # --- Entry Points (Breakout + Breakdown) ---
+    for df_trade, label, color in [
+        (breakout_df, 'Breakout Entry', 'blue'),
+        (breakdown_df, 'Breakdown Entry', 'blue')
+    ]:
+        entries = df_trade[df_trade['Result'] != '⏳ Still Holding']
+        fig.add_trace(go.Scatter(
+            x=entries['Entry Time'].apply(lambda t: pd.Timestamp.combine(entries['Next Day'], t) if t != '-' else None),
+            y=entries['Entry'],
+            mode='markers',
+            marker=dict(color=color, size=8, symbol='circle'),
+            name=label,
+            showlegend=True
+        ))
+
+    # --- Exit Points (Breakout + Breakdown) ---
+    for df_trade, label, color in [
+        (breakout_df, 'Breakout Exit', 'red'),
+        (breakdown_df, 'Breakdown Exit', 'red')
+    ]:
+        exits = df_trade[df_trade['Result'] != '❌ No Entry']
+        fig.add_trace(go.Scatter(
+            x=exits['Exit Time'].apply(lambda t: pd.Timestamp.combine(exits['Next Day'], t) if t != '-' else None),
+            y=exits['Target'],  # or 'SL' or 'Exit Price' if you add it
+            mode='markers',
+            marker=dict(color=color, size=8, symbol='square'),
+            name=label,
+            showlegend=True
+        ))
+
     fig.update_layout(
-        title="NIFTY 15-Min Chart (Last {} Trading Days)".format(analysis_days),
+        title="NIFTY 15-Min Chart with Entry/Exit Points",
         xaxis_title="DateTime (IST)",
         yaxis_title="Price",
         xaxis_rangeslider_visible=False,
         xaxis=dict(
-            rangebreaks=[
-                dict(bounds=["sat", "mon"]),
-                dict(bounds=[16, 9.15], pattern="hour")
-            ],
+            rangebreaks=[dict(bounds=["sat", "mon"]), dict(bounds=[16, 9.15], pattern="hour")],
             showgrid=False
         ),
         yaxis=dict(showgrid=True),
         plot_bgcolor='black',
         paper_bgcolor='black',
         font=dict(color='white'),
-        height=600
+        height=700
     )
     return fig
 
