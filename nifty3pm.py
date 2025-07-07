@@ -39,7 +39,25 @@ def get_nifty_15min(ticker="^NSEI", interval="15m", period="3d"):
         df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
         # ✅ Now lowercase column names
-        df.columns = [col.lower() for col in df.columns]
+        #df.columns = [col.lower() for col in df.columns]
+        df.reset_index(inplace=True)
+
+        # Flatten columns if MultiIndex
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip().lower() if isinstance(col, tuple) else col.strip().lower() for col in df.columns]
+        else:
+            df.columns = [col.strip().lower() for col in df.columns]
+        
+        # Rename to standard OHLC
+        rename_map = {
+            'open_^nsei': 'open',
+            'high_^nsei': 'high',
+            'low_^nsei': 'low',
+            'close_^nsei': 'close',
+            'volume_^nsei': 'volume'
+        }
+        df.rename(columns=rename_map, inplace=True)
+
 
         # ✅ Filter NSE market hours (9:15 to 15:30)
         df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
