@@ -667,6 +667,50 @@ trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain
 #################################################################------------------------------------------------------------
 
 
+def get_nifty_option_chain_with_spot():
+    url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.nseindia.com/option-chain"
+    }
+
+    try:
+        session = requests.Session()
+        session.headers.update(headers)
+        session.get("https://www.nseindia.com", timeout=5)
+        response = session.get(url, timeout=5)
+        data = response.json()
+
+        spot_price = data['records']['underlyingValue']
+        option_df = pd.DataFrame(data['records']['data'])
+
+        return option_df, spot_price
+
+    except Exception as e:
+        st.error(f"Error fetching option chain: {e}")
+        return pd.DataFrame(), None
+
+
+option_df, spot_price = get_nifty_option_chain_with_spot()
+
+if not option_df.empty:
+    # Filter to near ATM
+    if spot_price:
+        nearest_strike = round(spot_price / 50) * 50
+        strikes = list(range(nearest_strike - 250, nearest_strike + 300, 50))
+        filtered_df = option_df[option_df['strikePrice'].isin(strikes)]
+        st.subheader("🔗 Live NIFTY Option Chain (Near ATM)")
+        st.dataframe(filtered_df[['strikePrice', 'CE', 'PE']])
+
+        # ✅ Show Spot Price
+        st.success(f"📌 Live NIFTY Spot Price: **₹{spot_price:.2f}**")
+
+    else:
+        st.warning("⚠️ Spot price not available.")
+
+
+
+
 
 #################################################################------------------------------------------------------------
 
