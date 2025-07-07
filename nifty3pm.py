@@ -493,6 +493,7 @@ st.subheader("📊 Live NIFTY Option Chain (NSE)")
 #import pandas as pd
 
 def get_nifty_option_chain_simple():
+    import requests
     url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -503,21 +504,40 @@ def get_nifty_option_chain_simple():
         session = requests.Session()
         session.headers.update(headers)
 
-        session.get("https://www.nseindia.com", timeout=5)
+        session.get("https://www.nseindia.com", timeout=5)  # Visit home first
         response = session.get(url, timeout=5)
 
         data = response.json()
-        option_data = data['records']['data']
-        df = pd.DataFrame(option_data)
 
-        if 'strikePrice' not in df.columns:
-            raise ValueError("strikePrice not found in option chain DataFrame")
+        # Flatten the option chain data
+        records = data['records']['data']
 
-        return df
+        # Extract a list of all rows with strikePrice and CE/PE data
+        rows = []
+        for rec in records:
+            strike = rec.get('strikePrice')
+            ce = rec.get('CE', {})
+            pe = rec.get('PE', {})
+            row = {
+                'strikePrice': strike,
+                'CE_openInterest': ce.get('openInterest'),
+                'CE_lastPrice': ce.get('lastPrice'),
+                'CE_bidPrice': ce.get('bidprice'),
+                'CE_askPrice': ce.get('askPrice'),
+                'PE_openInterest': pe.get('openInterest'),
+                'PE_lastPrice': pe.get('lastPrice'),
+                'PE_bidPrice': pe.get('bidprice'),
+                'PE_askPrice': pe.get('askPrice'),
+            }
+            rows.append(row)
+
+        option_chain_df = pd.DataFrame(rows)
+        return option_chain_df
 
     except Exception as e:
-        st.error(f"Error fetching option chain: {e}")
+        print("Error fetching option chain:", e)
         return pd.DataFrame()
+
 
 
 # Example:
