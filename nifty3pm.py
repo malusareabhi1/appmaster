@@ -501,15 +501,24 @@ def get_nifty_option_chain_simple():
         session = requests.Session()
         session.headers.update(headers)
 
-        # First visit NSE home
+        # First visit NSE home to get cookies
         session.get("https://www.nseindia.com", timeout=5)
         response = session.get(url, timeout=5)
 
         data = response.json()
-        return pd.DataFrame(data['records']['data'])
+
+        # Get nearest expiry date (first in expiryDates list)
+        nearest_expiry = data['records']['expiryDates'][0]
+
+        # Filter records for nearest expiry only
+        records = data['records']['data']
+        current_month_records = [rec for rec in records if rec['expiryDate'] == nearest_expiry]
+
+        df = pd.DataFrame(current_month_records)
+        return df
 
     except Exception as e:
-        print("Error:", e)
+        print("Error fetching option chain:", e)
         return pd.DataFrame()
 
 # Example:
