@@ -666,6 +666,63 @@ option_chain_df = get_nifty_option_chain_simple()
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
 #################################################################------------------------------------------------------------
 
+def get_nifty_option_chain_simple():
+    url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.nseindia.com/option-chain"
+    }
+
+    try:
+        session = requests.Session()
+        session.headers.update(headers)
+
+        # Initialize session by visiting NSE
+        session.get("https://www.nseindia.com", timeout=5)
+        response = session.get(url, timeout=5)
+        data = response.json()
+
+        df = pd.json_normalize(data['records']['data'])
+
+        # Spot price
+        spot_price = data['records']['underlyingValue']
+        st.info(f"📌 NIFTY Spot: **{spot_price:.2f}**")
+
+        # Clean strike column
+        df = df[df['strikePrice'].notnull()]
+        df['strikePrice'] = df['strikePrice'].astype(int)
+
+        # Find nearest strike
+        unique_strikes = sorted(df['strikePrice'].unique())
+        nearest_strike = min(unique_strikes, key=lambda x: abs(x - spot_price))
+
+        # Filter ±2 strikes around nearest
+        nearby_strikes = [s for s in unique_strikes if abs(s - nearest_strike) <= 2]
+        df_filtered = df[df['strikePrice'].isin(nearby_strikes)]
+
+        # Display only necessary columns
+        ce_df = pd.json_normalize(df_filtered['CE'].dropna()).copy()
+        pe_df = pd.json_normalize(df_filtered['PE'].dropna()).copy()
+
+        ce_df = ce_df[['strikePrice', 'lastPrice', 'openInterest', 'changeinOpenInterest']]
+        pe_df = pe_df[['strikePrice', 'lastPrice', 'openInterest', 'changeinOpenInterest']]
+
+        st.subheader("📘 Near ATM CE Options (±2 Strikes)")
+        st.dataframe(ce_df.rename(columns={
+            'lastPrice': 'CE LTP', 'openInterest': 'CE OI', 'changeinOpenInterest': 'CE OI Chg'
+        }).style.format({'CE LTP': '₹{:.2f}', 'CE OI': '{:,.0f}', 'CE OI Chg': '{:,.0f}'}))
+
+        st.subheader("📘 Near ATM PE Options (±2 Strikes)")
+        st.dataframe(pe_df.rename(columns={
+            'lastPrice': 'PE LTP', 'openInterest': 'PE OI', 'changeinOpenInterest': 'PE OI Chg'
+        }).style.format({'PE LTP': '₹{:.2f}', 'PE OI': '{:,.0f}', 'PE OI Chg': '{:,.0f}'}))
+
+    except Exception as e:
+        st.error(f"Error fetching option chain: {e}")
+
+
+if st.sidebar.checkbox("📦 Show Live NIFTY Option Chain Near Spot"):
+    get_nifty_option_chain_simple()
 
 #################################################################------------------------------------------------------------
 
