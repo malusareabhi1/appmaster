@@ -487,4 +487,62 @@ opt_df = get_nifty_option_chain()
 if not opt_df.empty:
     st.dataframe(opt_df, use_container_width=True)
 
+from playwright.sync_api import sync_playwright
+import pandas as pd
+import json
+
+def fetch_nifty_option_chain_playwright():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+        page = context.new_page()
+
+        # Open NSE homepage first to set cookies
+        page.goto("https://www.nseindia.com", timeout=60000)
+        page.wait_for_timeout(2000)
+
+        # Fetch Option Chain JSON via browser
+        response = page.request.get("https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY")
+        
+        if response.status != 200:
+            raise Exception(f"NSE Option Chain API failed with status {response.status}")
+        
+        data = response.json()
+        expiry = data['records']['expiryDates'][0]
+        records = data['records']['data']
+
+        rows = []
+        for item in records:
+            strike = item.get("strikePrice")
+            if "CE" in item and item["CE"].get("expiryDate") == expiry:
+                ce = item["CE"]
+                rows.append({
+                    "type": "CE",
+                    "strike": strike,
+                    "ltp": ce.get("lastPrice"),
+                    "iv": ce.get("impliedVolatility"),
+                    "oi": ce.get("openInterest"),
+                    "volume": ce.get("totalTradedVolume"),
+                    "expiry": ce.get("expiryDate")
+                })
+            if "PE" in item and item["PE"].get("expiryDate") == expiry:
+                pe = item["PE"]
+                rows.append({
+                    "type": "PE",
+                    "strike": strike,
+                    "ltp": pe.get("lastPrice"),
+                    "iv": pe.get("impliedVolatility"),
+                    "oi": pe.get("openInterest"),
+                    "volume": pe.get("totalTradedVolume"),
+                    "expiry": pe.get("expiryDate")
+                })
+
+        df = pd.DataFrame(rows)
+        return df
+
+# Example:
+df_oc = fetch_nifty_option_chain_playwright()
+print(df_oc.head())
+
+
 
