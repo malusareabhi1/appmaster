@@ -11,10 +11,7 @@ st.title("📊 NIFTY 3-Day 15-Min Chart with 3PM Candle Highlight")
 @st.cache_data(ttl=300)
 def get_nifty_15min():
     df = yf.download("^NSEI", interval="15m", period="5d", progress=False)
-    st.write(df.head())
-    # Flatten column names
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.droplevel(0)  # drop 'NIFTYBEES.NS'
+   
 
     df = df[df.index.time >= datetime.strptime("09:15", "%H:%M").time()]
     df = df[df.index.time <= datetime.strptime("15:30", "%H:%M").time()]
@@ -25,6 +22,10 @@ def get_nifty_15min():
     return df
 
 df = get_nifty_15min()
+ st.write(df.head())
+    # Flatten column names
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(0)  # drop 'NIFTYBEES.NS'
 
 # Filter only last 3 trading days
 last_dates = df['Date'].unique()[-3:]
