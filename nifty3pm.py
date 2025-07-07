@@ -22,10 +22,10 @@ def get_nifty_15min():
     return df
 
 df = get_nifty_15min()
- st.write(df.head())
+st.write(df.head())
     # Flatten column names
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.droplevel(0)  # drop 'NIFTYBEES.NS'
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.droplevel(0)  # drop 'NIFTYBEES.NS'
 
 # Filter only last 3 trading days
 last_dates = df['Date'].unique()[-3:]
