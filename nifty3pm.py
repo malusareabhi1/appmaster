@@ -53,6 +53,8 @@ def get_nifty_15min(ticker="^NSEI", interval="15m", period="3d"):
 
 df = get_nifty_15min()
 st.write(df.head())
+st.write("Columns:", df.columns.tolist())
+
 
 def plot_nifty_15min_chart(df):
     if df.empty:
