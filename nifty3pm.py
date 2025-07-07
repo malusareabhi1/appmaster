@@ -515,7 +515,7 @@ def get_nifty_option_chain_simple():
 # Example:
 df_oc = get_nifty_option_chain_simple()
 st.dataframe(df_oc, use_container_width=True)
-st.print(df_oc.head())
+#st.print(df_oc.head())
 
 #############################################################################################################
 def get_closest_strike(spot_price, strikes_list):
