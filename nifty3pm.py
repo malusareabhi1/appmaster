@@ -236,26 +236,48 @@ def plot_candlestick_chart(df, df_3pm):
     ))
 
 
-    # Add horizontal lines for Open and Close of 3PM candles
-    for _, row in df_3pm.iterrows():
-        open_price = row['open']
-        close_price = row['close']
-        dt = row['datetime']
+    # Add horizontal dotted lines from 3PM to next day 3PM for Open and Close prices
+    for i in range(len(df_3pm) - 1):
+        row = df_3pm.iloc[i]
+        next_row = df_3pm.iloc[i + 1]
     
-        fig.add_hline(
-            y=open_price,
-            line_dash="dot",
-            line_color="blue",
-            annotation_text=f"{dt.strftime('%b %d')} 3PM Open: {open_price:.2f}",
-            annotation_position="top left"
+        dt_start = row['datetime'].to_pydatetime()
+        dt_end = next_row['datetime'].to_pydatetime()
+    
+        # Horizontal line for Open
+        fig.add_shape(
+            type="line",
+            x0=dt_start, x1=dt_end,
+            y0=row['open'], y1=row['open'],
+            line=dict(color="blue", width=1, dash="dot"),
+        )
+        fig.add_annotation(
+            x=dt_start,
+            y=row['open'],
+            text=f"{dt_start.strftime('%b %d')} 3PM Open",
+            showarrow=False,
+            xanchor="left",
+            yanchor="bottom",
+            font=dict(color="blue"),
+            bgcolor="black"
         )
     
-        fig.add_hline(
-            y=close_price,
-            line_dash="dot",
-            line_color="orange",
-            annotation_text=f"{dt.strftime('%b %d')} 3PM Close: {close_price:.2f}",
-            annotation_position="bottom left"
+        # Horizontal line for Close
+        fig.add_shape(
+            type="line",
+            x0=dt_start, x1=dt_end,
+            y0=row['close'], y1=row['close'],
+            line=dict(color="orange", width=1, dash="dot"),
+        )
+        fig.add_annotation(
+            x=dt_start,
+            y=row['close'],
+            text=f"{dt_start.strftime('%b %d')} 3PM Close",
+            showarrow=False,
+            xanchor="left",
+            yanchor="top",
+            font=dict(color="orange"),
+            bgcolor="black"
         )
     # Add vertical lines for each 3PM candle
    # for dt in df_3pm['datetime']:
