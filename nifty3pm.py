@@ -798,6 +798,25 @@ def get_option_price(chain_df, strike, option_type):
 #################################################################------------------------------------------------------------
 
 
+st.subheader("📄 Breakout Trade Log (Calls)")
+show_trade_metrics(trade_log_df, "Breakouts")
+st.dataframe(trade_log_df.style.applymap(color_pnl, subset=['P&L']))
+
+st.subheader("📄 Breakdown Trade Log (Puts)")
+show_trade_metrics(breakdown_df, "Breakdowns")
+st.dataframe(breakdown_df.style.applymap(color_pnl, subset=['P&L']))
+
+
+st.subheader("🧾 Paper Trade Log")
+
+if paper_trade_log:
+    paper_df = pd.DataFrame(paper_trade_log)
+    st.dataframe(paper_df)
+
+    csv = paper_df.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Download Paper Trades", csv, "paper_trades.csv", "text/csv")
+else:
+    st.info("No paper trades executed.")
 
 
 #################################################################------------------------------------------------------------
