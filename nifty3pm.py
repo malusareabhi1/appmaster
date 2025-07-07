@@ -123,4 +123,4 @@ def plot_nifty_15min_chart(df):
 
     st.plotly_chart(fig, use_container_width=True)
 
-plot_nifty_15min_chart(df)
+st.plot_nifty_15min_chart(df)
