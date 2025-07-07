@@ -372,65 +372,65 @@ def get_nifty_option_chain():
     try:
         session = requests.Session()
         headers = {
-            "User-Agent": "Mozilla/5.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept": "application/json",
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://www.nseindia.com/option-chain",
+            "Connection": "keep-alive"
         }
         session.headers.update(headers)
 
-        # Step 1: Get cookies by visiting homepage
-        home = session.get("https://www.nseindia.com", timeout=5)
-        if home.status_code != 200:
-            raise Exception("Failed to connect to NSE homepage.")
+        # Step 1: Hit NSE homepage to get cookies
+        home_resp = session.get("https://www.nseindia.com", timeout=5)
+        if home_resp.status_code != 200:
+            raise Exception("❌ Unable to connect to NSE homepage for cookies.")
 
-        # Step 2: Get option chain data
+        # Step 2: Get Option Chain data
         url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
-        response = session.get(url, timeout=5)
+        response = session.get(url, timeout=10)
 
         if response.status_code != 200:
+            st.warning("⚠️ Headers returned by NSE:")
+            st.code(str(response.headers))
             raise Exception(f"NSE API returned status code {response.status_code}")
 
         data = response.json()
-
-        records = data['records']['data']
         expiry = data['records']['expiryDates'][0]
+        records = data['records']['data']
 
-        option_data = []
-
+        rows = []
         for item in records:
-            strike = item.get('strikePrice')
-            if 'CE' in item and item['CE']['expiryDate'] == expiry:
-                ce = item['CE']
-                option_data.append({
-                    'type': 'CE',
-                    'strike': strike,
-                    'ltp': ce.get('lastPrice'),
-                    'iv': ce.get('impliedVolatility'),
-                    'oi': ce.get('openInterest'),
-                    'volume': ce.get('totalTradedVolume'),
-                    'expiry': ce.get('expiryDate'),
+            strike = item.get("strikePrice")
+            if "CE" in item and item["CE"].get("expiryDate") == expiry:
+                ce = item["CE"]
+                rows.append({
+                    "type": "CE",
+                    "strike": strike,
+                    "ltp": ce.get("lastPrice"),
+                    "iv": ce.get("impliedVolatility"),
+                    "oi": ce.get("openInterest"),
+                    "volume": ce.get("totalTradedVolume"),
+                    "expiry": ce.get("expiryDate")
                 })
-            if 'PE' in item and item['PE']['expiryDate'] == expiry:
-                pe = item['PE']
-                option_data.append({
-                    'type': 'PE',
-                    'strike': strike,
-                    'ltp': pe.get('lastPrice'),
-                    'iv': pe.get('impliedVolatility'),
-                    'oi': pe.get('openInterest'),
-                    'volume': pe.get('totalTradedVolume'),
-                    'expiry': pe.get('expiryDate'),
+            if "PE" in item and item["PE"].get("expiryDate") == expiry:
+                pe = item["PE"]
+                rows.append({
+                    "type": "PE",
+                    "strike": strike,
+                    "ltp": pe.get("lastPrice"),
+                    "iv": pe.get("impliedVolatility"),
+                    "oi": pe.get("openInterest"),
+                    "volume": pe.get("totalTradedVolume"),
+                    "expiry": pe.get("expiryDate")
                 })
 
-        df_option_chain = pd.DataFrame(option_data)
-        df_option_chain = df_option_chain.sort_values(['type', 'strike'])
-        return df_option_chain
+        df = pd.DataFrame(rows)
+        df = df.sort_values(["type", "strike"])
+        return df
 
     except Exception as e:
-        st.error(f"⚠️ Error fetching option chain: {e}")
+        st.error(f"❌ Error fetching option chain: {e}")
         return pd.DataFrame()
-
-
 
 
 
