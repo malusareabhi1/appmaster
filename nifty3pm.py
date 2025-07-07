@@ -501,16 +501,22 @@ def get_nifty_option_chain_simple():
         session = requests.Session()
         session.headers.update(headers)
 
-        # First visit NSE home
         session.get("https://www.nseindia.com", timeout=5)
         response = session.get(url, timeout=5)
 
         data = response.json()
-        return pd.DataFrame(data['records']['data'])
+        option_data = data['records']['data']
+        df = pd.DataFrame(option_data)
+
+        if 'strikePrice' not in df.columns:
+            raise ValueError("strikePrice not found in option chain DataFrame")
+
+        return df
 
     except Exception as e:
-        print("Error:", e)
-        return pd.DataFrame() 
+        st.error(f"Error fetching option chain: {e}")
+        return pd.DataFrame()
+
 
 # Example:
 df_oc = get_nifty_option_chain_simple()
