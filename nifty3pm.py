@@ -753,15 +753,31 @@ if not option_df.empty:
 #################################################################------------------------------------------------------------
 
 def place_paper_order(option_symbol, direction, price, quantity=50):
-    st.info(f"📝 [PAPER TRADE] {direction} {option_symbol} @ ₹{price:.2f} | Qty: {quantity}")
-    return {
-        "symbol": option_symbol,
-        "direction": direction,
-        "price": price,
-        "quantity": quantity,
-        "status": "executed"
+    trade = {
+        "DateTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Symbol": option_symbol,
+        "Direction": direction,
+        "Price": price,
+        "Quantity": quantity,
+        "Status": "Executed"
     }
+    paper_trade_log.append(trade)
+    st.info(f"📝 [PAPER TRADE] {direction} {option_symbol} @ ₹{price:.2f} | Qty: {quantity}")
+    return trade
 
+if paper_trade_log:
+    st.subheader("📄 Paper Trade Log")
+    df_log = pd.DataFrame(paper_trade_log)
+    st.dataframe(df_log.style.applymap(lambda x: 'color: green' if str(x).lower() == 'buy' else 'color: red' if str(x).lower() == 'sell' else None))
+
+    # ✅ Download as CSV
+    csv_data = df_log.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Paper Trade Log as CSV",
+        data=csv_data,
+        file_name="paper_trades.csv",
+        mime='text/csv'
+    )
 
 #################################################################------------------------------------------------------------
 
