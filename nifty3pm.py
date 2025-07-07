@@ -603,14 +603,61 @@ def generate_trade_logs_with_options(df, df_3pm, option_chain_df, offset):
     return breakout_df, breakdown_df
 
 
-#############################################################################################################
+#############################################################################################################--
+def find_nearest_strike(strikes, spot_price):
+    return min(strikes, key=lambda x: abs(x - spot_price))
 
 
 
-#############################################################################################################
+#############################################################################################################--
+
+def generate_trade_logs(df, offset, option_chain_df):
+    df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+
+    strikes = sorted(option_chain_df['strikePrice'].dropna().unique().tolist())
+    breakout_logs = []
+    breakdown_logs = []
+
+    for i in range(len(df_3pm) - 1):
+        current = df_3pm.iloc[i]
+        next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
+
+        threepm_high = current['high']
+        threepm_close = current['close']
+        threepm_low = current['low']
+        threepm_spot = current['close']  # or use avg of (high+low)/2
+
+        # Breakout logic
+        entry_breakout = threepm_high + offset
+        entry_breakdown = threepm_close - offset
+
+        # Match to closest strike
+        strike_price = find_nearest_strike(strikes, threepm_spot)
+        ce_symbol = f"NIFTY {strike_price} CE"
+        pe_symbol = f"NIFTY {strike_price} PE"
+
+        # Add symbol to your trade log
+        breakout_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Spot': round(threepm_spot, 2),
+            '3PM High': round(threepm_high, 2),
+            'Breakout Entry': round(entry_breakout, 2),
+            'Option Buy': ce_symbol,
+            'Type': 'CALL',
+        })
+
+        breakdown_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Spot': round(threepm_spot, 2),
+            '3PM Close': round(threepm_close, 2),
+            'Breakdown Entry': round(entry_breakdown, 2),
+            'Option Buy': pe_symbol,
+            'Type': 'PUT',
+        })
+
+    return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
 
 
-
-#############################################################################################################
+#############################################################################################################--
 
 
