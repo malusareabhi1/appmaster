@@ -654,6 +654,22 @@ def generate_trade_logs(df, offset, option_chain_df):
             'Option Buy': pe_symbol,
             'Type': 'PUT',
         })
+        if breakout_result == '🎯 Target Hit' or breakout_result == '🛑 Stop Loss Hit':
+            strike = round(threepm_high / 50) * 50  # Nearest strike
+            option_symbol = f"NIFTY{expiry_code}{strike}CE"
+            option_price = get_option_price(option_chain_df, strike, 'CE')
+        
+            if paper_trade and option_price:
+                place_paper_order(option_symbol, "BUY", option_price)
+        
+        if breakdown_result == '🎯 Target Hit' or breakdown_result == '🛑 Stop Loss Hit':
+            strike = round(threepm_close / 50) * 50
+            option_symbol = f"NIFTY{expiry_code}{strike}PE"
+            option_price = get_option_price(option_chain_df, strike, 'PE')
+        
+            if paper_trade and option_price:
+                place_paper_order(option_symbol, "BUY", option_price)
+
 
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
 
@@ -714,16 +730,38 @@ if not option_df.empty:
 
 #################################################################------------------------------------------------------------
 
+def place_paper_order(option_symbol, direction, price, quantity=50):
+    st.info(f"📝 [PAPER TRADE] {direction} {option_symbol} @ ₹{price:.2f} | Qty: {quantity}")
+    return {
+        "symbol": option_symbol,
+        "direction": direction,
+        "price": price,
+        "quantity": quantity,
+        "status": "executed"
+    }
+
+
+#################################################################------------------------------------------------------------
+
+def get_option_price(chain_df, strike, option_type):
+    try:
+        for item in chain_df:
+            if item.get("strikePrice") == strike:
+                return item[option_type]["lastPrice"]
+    except Exception as e:
+        st.warning(f"Option price fetch failed: {e}")
+    return None
+
+
+
 
 #################################################################------------------------------------------------------------
 
 
 
-#################################################################------------------------------------------------------------
-
-
 
 #################################################################------------------------------------------------------------
+
 
 
 
