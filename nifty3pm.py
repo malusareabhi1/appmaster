@@ -9,7 +9,7 @@ st.title("📊 NIFTY 3-Day 15-Min Chart with 3PM Candle Highlight")
 
 # --- Download NIFTY 15-min data for last 3 days ---
 @st.cache_data(ttl=3600)
-def get_nifty_15min(ticker="^NSEI", interval="15m", period="60d"):
+def get_nifty_15min(ticker="^NSEI", interval="15m", period="3d"):
     try:
         df = yf.download(ticker, interval=interval, period=period, progress=False)
         if df.empty:
