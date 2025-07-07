@@ -8,18 +8,48 @@ st.set_page_config(page_title="NIFTY 3-Day Chart with 3PM Candle", layout="wide"
 st.title("📊 NIFTY 3-Day 15-Min Chart with 3PM Candle Highlight")
 
 # --- Download NIFTY 15-min data for last 3 days ---
-@st.cache_data(ttl=300)
-def get_nifty_15min():
-    df = yf.download("^NSEI", interval="15m", period="5d", progress=False)
-   
+@st.cache_data(ttl=3600)
+def get_nifty_15min(ticker="^NSEI", interval="15m", period="60d"):
+    try:
+        df = yf.download(ticker, interval=interval, period=period, progress=False)
+        if df.empty:
+            st.error("❌ No data returned from yfinance.")
+            st.stop()
 
-    df = df[df.index.time >= datetime.strptime("09:15", "%H:%M").time()]
-    df = df[df.index.time <= datetime.strptime("15:30", "%H:%M").time()]
-    df.dropna(inplace=True)
-    df.reset_index(inplace=True)
-    df['Date'] = df['Datetime'].dt.date
-    df['Time'] = df['Datetime'].dt.time
-    return df
+        df.reset_index(inplace=True)
+
+        # ✅ Flatten MultiIndex columns if needed
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
+
+        # ✅ Find datetime column automatically
+        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
+
+        if not datetime_col:
+            st.error("❌ No datetime column found after reset_index().")
+            st.write("📋 Available columns:", df.columns.tolist())
+            st.stop()
+
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+        # ✅ Convert to datetime and localize
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        if df['datetime'].dt.tz is None:
+            df['datetime'] = df['datetime'].dt.tz_localize('UTC')
+        df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+
+        # ✅ Now lowercase column names
+        df.columns = [col.lower() for col in df.columns]
+
+        # ✅ Filter NSE market hours (9:15 to 15:30)
+        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+
+        return df
+
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
 
 df = get_nifty_15min()
 st.write(df.head())
