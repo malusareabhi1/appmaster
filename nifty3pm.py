@@ -513,5 +513,5 @@ def get_nifty_option_chain_simple():
         return pd.DataFrame()
 
 # Example:
-df_oc = fetch_nifty_option_chain_playwright()
+df_oc = get_nifty_option_chain_simple()
 print(df_oc.head())
