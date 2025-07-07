@@ -355,7 +355,7 @@ def show_trade_metrics(df, label):
     total_trades = len(df)
     wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
     win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
-
+    
     st.success(f"✅ {label} – Total Trades: {total_trades}, Wins: {wins} ({win_rate:.2f}%)")
 
 
@@ -801,10 +801,12 @@ def get_option_price(chain_df, strike, option_type):
 
 st.subheader("📄 Breakout Trade Log (Calls)")
 show_trade_metrics(trade_log_df, "Breakouts")
+trade_log_df['P&L'] = trade_log_df['Exit Price'] - trade_log_df['Entry Price']
 st.dataframe(trade_log_df.style.applymap(color_pnl, subset=['P&L']))
 
 st.subheader("📄 Breakdown Trade Log (Puts)")
 show_trade_metrics(breakdown_df, "Breakdowns")
+breakdown_df['P&L'] = breakdown_df['Exit Price'] - breakdown_df['Entry Price']
 st.dataframe(breakdown_df.style.applymap(color_pnl, subset=['P&L']))
 
 
