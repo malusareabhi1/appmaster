@@ -611,10 +611,10 @@ def find_nearest_strike(strikes, spot_price):
 
 #############################################################################################################--
 
-def generate_trade_logs(df, offset, option_chain_df):
+def generate_trade_logs(df, offset, option_chain_df, paper_trade=False, expiry_code="11JUL24"):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
-
     strikes = sorted(option_chain_df['strikePrice'].dropna().unique().tolist())
+    
     breakout_logs = []
     breakdown_logs = []
 
@@ -625,18 +625,31 @@ def generate_trade_logs(df, offset, option_chain_df):
         threepm_high = current['high']
         threepm_close = current['close']
         threepm_low = current['low']
-        threepm_spot = current['close']  # or use avg of (high+low)/2
+        threepm_spot = current['close']
 
-        # Breakout logic
         entry_breakout = threepm_high + offset
         entry_breakdown = threepm_close - offset
 
-        # Match to closest strike
         strike_price = find_nearest_strike(strikes, threepm_spot)
-        ce_symbol = f"NIFTY {strike_price} CE"
-        pe_symbol = f"NIFTY {strike_price} PE"
+        ce_symbol = f"NIFTY{expiry_code}{strike_price}CE"
+        pe_symbol = f"NIFTY{expiry_code}{strike_price}PE"
 
-        # Add symbol to your trade log
+        # --- Breakout Logic ---
+        next_day_data = df[(df['datetime'].dt.date == next_day_date) & 
+                           (df['datetime'].dt.time >= pd.to_datetime("09:15").time())].copy()
+        next_day_data.sort_values('datetime', inplace=True)
+
+        breakout_result = '❌ No Entry'
+        if not next_day_data.empty:
+            entry_row = next_day_data[next_day_data['high'] >= entry_breakout]
+            if not entry_row.empty:
+                breakout_result = '🎯 Target Hit'  # You can improve this later with SL/Target logic
+
+                if paper_trade:
+                    option_price = get_option_price(option_chain_df, strike_price, 'CE')
+                    if option_price:
+                        place_paper_order(ce_symbol, "BUY", option_price)
+
         breakout_logs.append({
             '3PM Date': current['datetime'].date(),
             'Spot': round(threepm_spot, 2),
@@ -644,7 +657,24 @@ def generate_trade_logs(df, offset, option_chain_df):
             'Breakout Entry': round(entry_breakout, 2),
             'Option Buy': ce_symbol,
             'Type': 'CALL',
+            'Result': breakout_result
         })
+
+        # --- Breakdown Logic ---
+        breakdown_result = '❌ No Entry'
+        if not next_day_data.empty:
+            crossed_down = next_day_data[
+                (next_day_data['high'].shift(1) > entry_breakdown) &
+                (next_day_data['low'] < entry_breakdown)
+            ]
+
+            if not crossed_down.empty:
+                breakdown_result = '🎯 Target Hit'  # Can improve logic
+
+                if paper_trade:
+                    option_price = get_option_price(option_chain_df, strike_price, 'PE')
+                    if option_price:
+                        place_paper_order(pe_symbol, "BUY", option_price)
 
         breakdown_logs.append({
             '3PM Date': current['datetime'].date(),
@@ -653,25 +683,11 @@ def generate_trade_logs(df, offset, option_chain_df):
             'Breakdown Entry': round(entry_breakdown, 2),
             'Option Buy': pe_symbol,
             'Type': 'PUT',
+            'Result': breakdown_result
         })
-        if breakout_result == '🎯 Target Hit' or breakout_result == '🛑 Stop Loss Hit':
-            strike = round(threepm_high / 50) * 50  # Nearest strike
-            option_symbol = f"NIFTY{expiry_code}{strike}CE"
-            option_price = get_option_price(option_chain_df, strike, 'CE')
-        
-            if paper_trade and option_price:
-                place_paper_order(option_symbol, "BUY", option_price)
-        
-        if breakdown_result == '🎯 Target Hit' or breakdown_result == '🛑 Stop Loss Hit':
-            strike = round(threepm_close / 50) * 50
-            option_symbol = f"NIFTY{expiry_code}{strike}PE"
-            option_price = get_option_price(option_chain_df, strike, 'PE')
-        
-            if paper_trade and option_price:
-                place_paper_order(option_symbol, "BUY", option_price)
-
 
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
+
 
 
 #################################################################------------------------------------------------------------
