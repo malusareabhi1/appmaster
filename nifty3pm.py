@@ -517,7 +517,7 @@ df_oc = get_nifty_option_chain_simple()
 st.dataframe(df_oc, use_container_width=True)
 #st.print(df_oc.head())
 
-#############################################################################################################
+#############################################################################################################--
 def get_closest_strike(spot_price, strikes_list):
     """
     Given the spot price and a list/array of available strike prices,
@@ -526,7 +526,80 @@ def get_closest_strike(spot_price, strikes_list):
     strikes = pd.Series(strikes_list)
     idx = (strikes - spot_price).abs().idxmin()
     return strikes.iloc[idx]
-#############################################################################################################
+#############################################################################################################--
+def find_closest_strike(strikes, spot):
+    # Find strike closest to spot price
+    return min(strikes, key=lambda x: abs(x - spot))
+
+def generate_trade_logs_with_options(df, df_3pm, option_chain_df, offset):
+    breakout_logs = []
+    breakdown_logs = []
+
+    # Extract available strikes in option chain
+    strikes = option_chain_df['strikePrice'].unique().tolist()
+
+    for i in range(len(df_3pm) - 1):
+        current = df_3pm.iloc[i]
+        next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
+
+        threepm_high = current['high']
+        threepm_close = current['close']
+        threepm_spot = current['spot']  # use 3PM close as spot
+
+        entry_breakout = threepm_high + offset
+        entry_breakdown = threepm_close - offset
+
+        # Find closest strike to 3PM spot
+        closest_strike = find_closest_strike(strikes, threepm_spot)
+
+        # Option symbols for CE and PE (example format)
+        ce_symbol = f"NIFTY{closest_strike}CE"
+        pe_symbol = f"NIFTY{closest_strike}PE"
+
+        # --- Breakout Logic ---
+        # Your existing breakout logic here, add option buy signal if breakout happens
+
+        # (Example simplified)
+        breakout_signal = False
+        breakout_entry_time = None
+        # simulate checking next_day_data for breakout...
+        # if breakout happens:
+        breakout_signal = True
+        breakout_entry_time = "09:45"  # example time
+
+        breakout_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Next Day': next_day_date,
+            '3PM High': round(threepm_high, 2),
+            'Breakout Entry Price': round(entry_breakout, 2),
+            'Option Buy Symbol': ce_symbol,
+            'Option Type': 'CE',
+            'Breakout Entry Time': breakout_entry_time,
+            # other breakout info...
+        })
+
+        # --- Breakdown Logic ---
+        breakdown_signal = False
+        breakdown_entry_time = None
+        # similarly check for breakdown...
+        # if breakdown happens:
+        breakdown_signal = True
+        breakdown_entry_time = "10:15"
+
+        breakdown_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Next Day': next_day_date,
+            '3PM Close': round(threepm_close, 2),
+            'Breakdown Entry Price': round(entry_breakdown, 2),
+            'Option Buy Symbol': pe_symbol,
+            'Option Type': 'PE',
+            'Breakdown Entry Time': breakdown_entry_time,
+            # other breakdown info...
+        })
+
+    breakout_df = pd.DataFrame(breakout_logs)
+    breakdown_df = pd.DataFrame(breakdown_logs)
+    return breakout_df, breakdown_df
 
 
 #############################################################################################################
