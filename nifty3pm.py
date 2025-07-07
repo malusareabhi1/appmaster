@@ -731,7 +731,7 @@ def get_nifty_option_chain_simple1():
 # Example:
 df_oc = get_nifty_option_chain_simple1()
 #st.dataframe(df_oc, use_container_width=True)
-st.write(df_oc)
+#st.write(df_oc)
 #st.print(df_oc.head())
 
 #################################################################------------------------------------------------------------
