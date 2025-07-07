@@ -34,7 +34,7 @@ def plot_cumulative_pnl(df, title="Cumulative P&L"):
     return fig
     
 @st.cache_data(ttl=3600)
-def load_nifty_data(ticker="^NSEI", interval="15m", period="60d"):
+def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
     try:
         df = yf.download(ticker, interval=interval, period=period, progress=False)
         if df.empty:
