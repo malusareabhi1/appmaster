@@ -11,6 +11,8 @@ st.title("📊 NIFTY 3-Day 15-Min Chart with 3PM Candle Highlight")
 @st.cache_data(ttl=300)
 def get_nifty_15min():
     df = yf.download("^NSEI", interval="15m", period="5d", progress=False)
+    st.write(df.head())
+
     df = df[df.index.time >= datetime.strptime("09:15", "%H:%M").time()]
     df = df[df.index.time <= datetime.strptime("15:30", "%H:%M").time()]
     df.dropna(inplace=True)
