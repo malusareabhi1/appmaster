@@ -82,7 +82,7 @@ def plot_nifty_15min_chart(df):
     st.subheader("📉 NIFTY 15-Min Candlestick Chart (Last 3 Days)")
     fig = go.Figure()
 
-    # Candlestick Plot
+    # Plot the candlesticks
     fig.add_trace(go.Candlestick(
         x=df['datetime'],
         open=df['open'],
@@ -94,28 +94,30 @@ def plot_nifty_15min_chart(df):
         decreasing_line_color='red'
     ))
 
-    # Get last 3 dates
+    # Extract last 3 dates
     last_dates = df['datetime'].dt.date.unique()[-3:]
 
-    # Mark 3PM candle on each day
     for date in last_dates:
+        # Find the exact 3:00 PM candle
         dt_3pm = pd.Timestamp(f"{date} 15:00").tz_localize("Asia/Kolkata")
         candle_3pm = df[df['datetime'] == dt_3pm]
+
         if not candle_3pm.empty:
             row = candle_3pm.iloc[0]
+            vline_time = row['datetime'].to_pydatetime()  # ✅ Convert to native Python datetime
 
-            # Vertical line at 3PM
+            # Add vertical dotted line at 3PM
             fig.add_vline(
-                x=row['datetime'],
+                x=vline_time,
                 line_color="blue",
                 line_dash="dot",
                 annotation_text="3PM",
                 annotation_position="top right"
             )
 
-            # Markers for Open and Close
+            # Add marker for Open
             fig.add_trace(go.Scatter(
-                x=[row['datetime']],
+                x=[vline_time],
                 y=[row['open']],
                 mode="markers+text",
                 marker=dict(color="blue", size=10),
@@ -123,8 +125,10 @@ def plot_nifty_15min_chart(df):
                 textposition="top center",
                 name="3PM Open"
             ))
+
+            # Add marker for Close
             fig.add_trace(go.Scatter(
-                x=[row['datetime']],
+                x=[vline_time],
                 y=[row['close']],
                 mode="markers+text",
                 marker=dict(color="orange", size=10),
@@ -133,16 +137,17 @@ def plot_nifty_15min_chart(df):
                 name="3PM Close"
             ))
 
+    # Update layout
     fig.update_layout(
         title="NIFTY 15-Min Chart with 3PM Candle Highlighted",
-        xaxis_title="Time",
+        xaxis_title="Datetime",
         yaxis_title="Price",
         xaxis_rangeslider_visible=False,
-        height=600
+        height=600,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
 
 
 plot_nifty_15min_chart(df)
