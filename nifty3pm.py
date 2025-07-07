@@ -281,7 +281,12 @@ def plot_candlestick_chart(df, df_3pm):
         )
     # Add vertical lines for each 3PM candle
     # Handle last 3PM candle (no next day available)
-if len(df_3pm) > 0:
+
+
+   # for dt in df_3pm['datetime']:
+        #fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
+
+    if len(df_3pm) > 0:
     last_row = df_3pm.iloc[-1]
     dt_start = last_row['datetime'].to_pydatetime()
     dt_end = df['datetime'].max().to_pydatetime()  # use last available candle
@@ -321,9 +326,6 @@ if len(df_3pm) > 0:
         font=dict(color="orange"),
         bgcolor="black"
     )
-
-   # for dt in df_3pm['datetime']:
-        #fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
 
     fig.update_layout(
         title="NIFTY 15-Min Chart (Last {} Trading Days)".format(analysis_days),
