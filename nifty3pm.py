@@ -362,21 +362,34 @@ def color_pnl(val):
     return f'color: {color}; font-weight: bold;'
 ###################################################################################################
 
+#import requests
+#import pandas as pd
+#from datetime import datetime
+from bs4 import BeautifulSoup
+
 @st.cache_data(ttl=60)
 def get_nifty_option_chain():
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
-
     try:
         session = requests.Session()
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.nseindia.com/option-chain",
+        }
         session.headers.update(headers)
 
-        # Required to get cookies
-        session.get("https://www.nseindia.com", timeout=5)
+        # Step 1: Get cookies by visiting homepage
+        home = session.get("https://www.nseindia.com", timeout=5)
+        if home.status_code != 200:
+            raise Exception("Failed to connect to NSE homepage.")
 
+        # Step 2: Get option chain data
+        url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
         response = session.get(url, timeout=5)
+
+        if response.status_code != 200:
+            raise Exception(f"NSE API returned status code {response.status_code}")
+
         data = response.json()
 
         records = data['records']['data']
@@ -384,38 +397,38 @@ def get_nifty_option_chain():
 
         option_data = []
 
-        for record in records:
-            strike = record['strikePrice']
-            ce = record.get('CE')
-            pe = record.get('PE')
-
-            if ce and ce['expiryDate'] == expiry:
+        for item in records:
+            strike = item.get('strikePrice')
+            if 'CE' in item and item['CE']['expiryDate'] == expiry:
+                ce = item['CE']
                 option_data.append({
                     'type': 'CE',
                     'strike': strike,
-                    'expiry': ce['expiryDate'],
                     'ltp': ce.get('lastPrice'),
                     'iv': ce.get('impliedVolatility'),
-                    'oi': ce.get('openInterest')
+                    'oi': ce.get('openInterest'),
+                    'volume': ce.get('totalTradedVolume'),
+                    'expiry': ce.get('expiryDate'),
                 })
-
-            if pe and pe['expiryDate'] == expiry:
+            if 'PE' in item and item['PE']['expiryDate'] == expiry:
+                pe = item['PE']
                 option_data.append({
                     'type': 'PE',
                     'strike': strike,
-                    'expiry': pe['expiryDate'],
                     'ltp': pe.get('lastPrice'),
                     'iv': pe.get('impliedVolatility'),
-                    'oi': pe.get('openInterest')
+                    'oi': pe.get('openInterest'),
+                    'volume': pe.get('totalTradedVolume'),
+                    'expiry': pe.get('expiryDate'),
                 })
 
-        df_opt = pd.DataFrame(option_data)
-        return df_opt.sort_values(['type', 'strike'])
+        df_option_chain = pd.DataFrame(option_data)
+        df_option_chain = df_option_chain.sort_values(['type', 'strike'])
+        return df_option_chain
 
     except Exception as e:
         st.error(f"⚠️ Error fetching option chain: {e}")
         return pd.DataFrame()
-
 
 
 
