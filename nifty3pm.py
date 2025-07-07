@@ -676,53 +676,67 @@ def get_nifty_option_chain_simple1():
     try:
         session = requests.Session()
         session.headers.update(headers)
-
-        # Initialize NSE session
-        session.get("https://www.nseindia.com", timeout=5)
+        session.get("https://www.nseindia.com", timeout=5)  # Init cookie
         response = session.get(url, timeout=5)
         data = response.json()
 
-        df = pd.json_normalize(data['records']['data'])
-
-        # Spot price
         spot_price = data['records']['underlyingValue']
-        st.info(f"📌 NIFTY Spot: **{spot_price:.2f}**")
+        st.info(f"📌 NIFTY Spot Price: **{spot_price:.2f}**")
 
-        # Clean strike prices
+        all_data = data['records']['data']
+
+        cleaned_data = []
+
+        for item in all_data:
+            strike = item.get('strikePrice')
+            ce_data = item.get('CE')
+            pe_data = item.get('PE')
+
+            row = {'strikePrice': strike}
+
+            if ce_data:
+                row.update({
+                    'CE_LTP': ce_data.get('lastPrice'),
+                    'CE_OI': ce_data.get('openInterest'),
+                    'CE_OI_Change': ce_data.get('changeinOpenInterest')
+                })
+            else:
+                row.update({'CE_LTP': None, 'CE_OI': None, 'CE_OI_Change': None})
+
+            if pe_data:
+                row.update({
+                    'PE_LTP': pe_data.get('lastPrice'),
+                    'PE_OI': pe_data.get('openInterest'),
+                    'PE_OI_Change': pe_data.get('changeinOpenInterest')
+                })
+            else:
+                row.update({'PE_LTP': None, 'PE_OI': None, 'PE_OI_Change': None})
+
+            cleaned_data.append(row)
+
+        df = pd.DataFrame(cleaned_data)
+
+        # Filter for ±2 nearest strikes
         df = df[df['strikePrice'].notnull()]
         df['strikePrice'] = df['strikePrice'].astype(int)
 
-        # Nearest strike logic
-        unique_strikes = sorted(df['strikePrice'].unique())
-        nearest_strike = min(unique_strikes, key=lambda x: abs(x - spot_price))
+        nearest_strike = min(df['strikePrice'], key=lambda x: abs(x - spot_price))
+        nearby_df = df[df['strikePrice'].between(nearest_strike - 2 * 50, nearest_strike + 2 * 50)]
 
-        # Filter strikes ±2 around nearest
-        nearby_strikes = [s for s in unique_strikes if abs(s - nearest_strike) <= 2]
-        df_filtered = df[df['strikePrice'].isin(nearby_strikes)].copy()
+        st.subheader("📘 NIFTY Option Chain – Near ATM (±2 Strikes)")
+        st.dataframe(
+            nearby_df.set_index('strikePrice')
+            .style.format({
+                'CE_LTP': '₹{:.2f}', 'CE_OI': '{:,.0f}', 'CE_OI_Change': '{:,.0f}',
+                'PE_LTP': '₹{:.2f}', 'PE_OI': '{:,.0f}', 'PE_OI_Change': '{:,.0f}',
+            })
+        )
 
-        # Only keep rows where CE and PE data exist
-        df_filtered = df_filtered[df_filtered['CE'].notnull() & df_filtered['PE'].notnull()]
-
-        # Extract CE and PE
-        ce_df = pd.json_normalize(df_filtered['CE'])
-        pe_df = pd.json_normalize(df_filtered['PE'])
-
-        ce_df = ce_df[['strikePrice', 'lastPrice', 'openInterest', 'changeinOpenInterest']]
-        pe_df = pe_df[['strikePrice', 'lastPrice', 'openInterest', 'changeinOpenInterest']]
-
-        # Display tables
-        st.subheader("📘 Near ATM CE Options (±2 Strikes)")
-        st.dataframe(ce_df.rename(columns={
-            'lastPrice': 'CE LTP', 'openInterest': 'CE OI', 'changeinOpenInterest': 'CE OI Chg'
-        }).style.format({'CE LTP': '₹{:.2f}', 'CE OI': '{:,.0f}', 'CE OI Chg': '{:,.0f}'}))
-
-        st.subheader("📘 Near ATM PE Options (±2 Strikes)")
-        st.dataframe(pe_df.rename(columns={
-            'lastPrice': 'PE LTP', 'openInterest': 'PE OI', 'changeinOpenInterest': 'PE OI Chg'
-        }).style.format({'PE LTP': '₹{:.2f}', 'PE OI': '{:,.0f}', 'PE OI Chg': '{:,.0f}'}))
+        return nearby_df, spot_price, nearest_strike
 
     except Exception as e:
         st.error(f"Error fetching option chain: {e}")
+        return pd.DataFrame(), None, None
 
 
 #if st.sidebar.checkbox("📦 Show Live NIFTY Option Chain Near Spot"):
