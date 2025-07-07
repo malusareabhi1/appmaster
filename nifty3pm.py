@@ -10,7 +10,7 @@ st.title("📈 NIFTY 15-Min Chart – 3PM Breakout/Breakdown Strategy")
 
 st.sidebar.header("Settings")
 offset_points = st.sidebar.number_input("Offset Points for Breakout/Breakdown", value=100, step=10)
-analysis_days = st.sidebar.slider("Number of Days to Analyze", min_value=10, max_value=90, value=60, step=5)
+analysis_days = st.sidebar.slider("Number of Days to Analyze", min_value=3, max_value=60, value=5, step=1)
 
 st.markdown("""
 ## 📘 Strategy Explanation
