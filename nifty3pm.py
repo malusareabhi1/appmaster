@@ -797,6 +797,7 @@ def get_option_price(chain_df, strike, option_type):
 
 #################################################################------------------------------------------------------------
 
+st.write("📋 trade_log_df Columns:", trade_log_df.columns.tolist())
 
 st.subheader("📄 Breakout Trade Log (Calls)")
 show_trade_metrics(trade_log_df, "Breakouts")
