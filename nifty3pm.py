@@ -280,6 +280,48 @@ def plot_candlestick_chart(df, df_3pm):
             bgcolor="black"
         )
     # Add vertical lines for each 3PM candle
+    # Handle last 3PM candle (no next day available)
+if len(df_3pm) > 0:
+    last_row = df_3pm.iloc[-1]
+    dt_start = last_row['datetime'].to_pydatetime()
+    dt_end = df['datetime'].max().to_pydatetime()  # use last available candle
+
+    # Open line
+    fig.add_shape(
+        type="line",
+        x0=dt_start, x1=dt_end,
+        y0=last_row['open'], y1=last_row['open'],
+        line=dict(color="blue", width=1, dash="dot"),
+    )
+    fig.add_annotation(
+        x=dt_start,
+        y=last_row['open'],
+        text=f"{dt_start.strftime('%b %d')} 3PM Open",
+        showarrow=False,
+        xanchor="left",
+        yanchor="bottom",
+        font=dict(color="blue"),
+        bgcolor="black"
+    )
+
+    # Close line
+    fig.add_shape(
+        type="line",
+        x0=dt_start, x1=dt_end,
+        y0=last_row['close'], y1=last_row['close'],
+        line=dict(color="orange", width=1, dash="dot"),
+    )
+    fig.add_annotation(
+        x=dt_start,
+        y=last_row['close'],
+        text=f"{dt_start.strftime('%b %d')} 3PM Close",
+        showarrow=False,
+        xanchor="left",
+        yanchor="top",
+        font=dict(color="orange"),
+        bgcolor="black"
+    )
+
    # for dt in df_3pm['datetime']:
         #fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
 
