@@ -27,6 +27,8 @@ This intraday breakout/backtest strategy is based on the NIFTY 15-minute chart.
 """)
 
 #import plotly.express as px
+# ✅ Initialize empty log for paper trades
+paper_trade_log = []
 
 def plot_cumulative_pnl(df, title="Cumulative P&L"):
     df['cumulative_pnl'] = df['P&L'].cumsum()
