@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+import requests
 #import plotly.express as px
 st.set_page_config(page_title="NIFTY 15-Min Chart with 3PM Breakout Strategy", layout="wide")
 
@@ -359,6 +360,66 @@ def show_trade_metrics(df, label):
 def color_pnl(val):
     color = 'green' if val > 0 else 'red' if val < 0 else 'white'
     return f'color: {color}; font-weight: bold;'
+###################################################################################################
+
+@st.cache_data(ttl=60)
+def get_nifty_option_chain():
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
+
+    try:
+        session = requests.Session()
+        session.headers.update(headers)
+
+        # Required to get cookies
+        session.get("https://www.nseindia.com", timeout=5)
+
+        response = session.get(url, timeout=5)
+        data = response.json()
+
+        records = data['records']['data']
+        expiry = data['records']['expiryDates'][0]
+
+        option_data = []
+
+        for record in records:
+            strike = record['strikePrice']
+            ce = record.get('CE')
+            pe = record.get('PE')
+
+            if ce and ce['expiryDate'] == expiry:
+                option_data.append({
+                    'type': 'CE',
+                    'strike': strike,
+                    'expiry': ce['expiryDate'],
+                    'ltp': ce.get('lastPrice'),
+                    'iv': ce.get('impliedVolatility'),
+                    'oi': ce.get('openInterest')
+                })
+
+            if pe and pe['expiryDate'] == expiry:
+                option_data.append({
+                    'type': 'PE',
+                    'strike': strike,
+                    'expiry': pe['expiryDate'],
+                    'ltp': pe.get('lastPrice'),
+                    'iv': pe.get('impliedVolatility'),
+                    'oi': pe.get('openInterest')
+                })
+
+        df_opt = pd.DataFrame(option_data)
+        return df_opt.sort_values(['type', 'strike'])
+
+    except Exception as e:
+        st.error(f"⚠️ Error fetching option chain: {e}")
+        return pd.DataFrame()
+
+
+
+
+
 
 # ----------------------- MAIN ------------------------
 
@@ -406,4 +467,11 @@ df_3pm = df_3pm.rename(columns={
 fig = plot_candlestick_chart(df, df_3pm)
 st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
 st.plotly_chart(fig, use_container_width=True)
+
+# Now Live NIFTY Option Chain (NSE)
+st.subheader("📊 Live NIFTY Option Chain (NSE)")
+opt_df = get_nifty_option_chain()
+if not opt_df.empty:
+    st.dataframe(opt_df, use_container_width=True)
+
 
