@@ -677,7 +677,7 @@ def get_nifty_option_chain_simple1():
         session = requests.Session()
         session.headers.update(headers)
 
-        # Initialize session by visiting NSE
+        # Initialize NSE session
         session.get("https://www.nseindia.com", timeout=5)
         response = session.get(url, timeout=5)
         data = response.json()
@@ -688,25 +688,29 @@ def get_nifty_option_chain_simple1():
         spot_price = data['records']['underlyingValue']
         st.info(f"📌 NIFTY Spot: **{spot_price:.2f}**")
 
-        # Clean strike column
+        # Clean strike prices
         df = df[df['strikePrice'].notnull()]
         df['strikePrice'] = df['strikePrice'].astype(int)
 
-        # Find nearest strike
+        # Nearest strike logic
         unique_strikes = sorted(df['strikePrice'].unique())
         nearest_strike = min(unique_strikes, key=lambda x: abs(x - spot_price))
 
-        # Filter ±2 strikes around nearest
+        # Filter strikes ±2 around nearest
         nearby_strikes = [s for s in unique_strikes if abs(s - nearest_strike) <= 2]
-        df_filtered = df[df['strikePrice'].isin(nearby_strikes)]
+        df_filtered = df[df['strikePrice'].isin(nearby_strikes)].copy()
 
-        # Display only necessary columns
-        ce_df = pd.json_normalize(df_filtered['CE'].dropna()).copy()
-        pe_df = pd.json_normalize(df_filtered['PE'].dropna()).copy()
+        # Only keep rows where CE and PE data exist
+        df_filtered = df_filtered[df_filtered['CE'].notnull() & df_filtered['PE'].notnull()]
+
+        # Extract CE and PE
+        ce_df = pd.json_normalize(df_filtered['CE'])
+        pe_df = pd.json_normalize(df_filtered['PE'])
 
         ce_df = ce_df[['strikePrice', 'lastPrice', 'openInterest', 'changeinOpenInterest']]
         pe_df = pe_df[['strikePrice', 'lastPrice', 'openInterest', 'changeinOpenInterest']]
 
+        # Display tables
         st.subheader("📘 Near ATM CE Options (±2 Strikes)")
         st.dataframe(ce_df.rename(columns={
             'lastPrice': 'CE LTP', 'openInterest': 'CE OI', 'changeinOpenInterest': 'CE OI Chg'
