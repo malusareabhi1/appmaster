@@ -4,4 +4,5 @@ plotly==5.2.2
 cufflinks==0.17.3
 numpy
 yfinance 
-sync_playwright
+playwright
+json
