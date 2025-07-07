@@ -53,61 +53,72 @@ def get_nifty_15min(ticker="^NSEI", interval="15m", period="3d"):
 
 df = get_nifty_15min()
 st.write(df.head())
-    # Flatten column names
-#if isinstance(df.columns, pd.MultiIndex):
-    #df.columns = df.columns.droplevel(0)  # drop 'NIFTYBEES.NS'
-#st.write(df.head())
-# Filter only last 3 trading days
-last_dates = df['Date'].unique()[-3:]
-df = df[df['Date'].isin(last_dates)]
 
-# --- Plot ---
-fig = go.Figure()
+def plot_nifty_15min_chart(df):
+    if df.empty:
+        st.warning("No data to display.")
+        return
 
-fig.add_trace(go.Candlestick(
-    x=df['Datetime'],
-    open=df['Open'],
-    high=df['High'],
-    low=df['Low'],
-    close=df['Close'],
-    name="NIFTY",
-    increasing_line_color='green',
-    decreasing_line_color='red'
-))
+    st.subheader("📉 NIFTY 15-Min Candlestick Chart (Last 3 Days)")
+    fig = go.Figure()
 
-# --- Highlight 3PM candles ---
-for date in last_dates:
-    candle_3pm = df[(df['Date'] == date) & (df['Time'] == datetime.strptime("15:00", "%H:%M").time())]
-    if not candle_3pm.empty:
-        row = candle_3pm.iloc[0]
-        # Vertical line at 3PM
-        fig.add_vline(x=row['Datetime'], line_color="blue", line_dash="dot", annotation_text="3PM", annotation_position="top right")
-        # Open/Close markers
-        fig.add_trace(go.Scatter(
-            x=[row['Datetime']],
-            y=[row['Open']],
-            mode="markers+text",
-            text=["Open"],
-            textposition="top center",
-            marker=dict(color="blue", size=10),
-            name="3PM Open"
-        ))
-        fig.add_trace(go.Scatter(
-            x=[row['Datetime']],
-            y=[row['Close']],
-            mode="markers+text",
-            text=["Close"],
-            textposition="bottom center",
-            marker=dict(color="orange", size=10),
-            name="3PM Close"
-        ))
+    # Candlestick Plot
+    fig.add_trace(go.Candlestick(
+        x=df['datetime'],
+        open=df['open'],
+        high=df['high'],
+        low=df['low'],
+        close=df['close'],
+        name="15-min Candle",
+        increasing_line_color='green',
+        decreasing_line_color='red'
+    ))
 
-fig.update_layout(
-    title="NIFTY 15-Min Chart with 3PM Candle Marked",
-    xaxis_title="Datetime",
-    yaxis_title="Price",
-    xaxis_rangeslider_visible=False,
-    height=600
-)
+    # Get last 3 dates
+    last_dates = df['datetime'].dt.date.unique()[-3:]
 
-st.plotly_chart(fig, use_container_width=True)
+    # Mark 3PM candle on each day
+    for date in last_dates:
+        dt_3pm = pd.Timestamp(f"{date} 15:00").tz_localize("Asia/Kolkata")
+        candle_3pm = df[df['datetime'] == dt_3pm]
+        if not candle_3pm.empty:
+            row = candle_3pm.iloc[0]
+
+            # Vertical line at 3PM
+            fig.add_vline(
+                x=row['datetime'],
+                line_color="blue",
+                line_dash="dot",
+                annotation_text="3PM",
+                annotation_position="top right"
+            )
+
+            # Markers for Open and Close
+            fig.add_trace(go.Scatter(
+                x=[row['datetime']],
+                y=[row['open']],
+                mode="markers+text",
+                marker=dict(color="blue", size=10),
+                text=["Open"],
+                textposition="top center",
+                name="3PM Open"
+            ))
+            fig.add_trace(go.Scatter(
+                x=[row['datetime']],
+                y=[row['close']],
+                mode="markers+text",
+                marker=dict(color="orange", size=10),
+                text=["Close"],
+                textposition="bottom center",
+                name="3PM Close"
+            ))
+
+    fig.update_layout(
+        title="NIFTY 15-Min Chart with 3PM Candle Highlighted",
+        xaxis_title="Time",
+        yaxis_title="Price",
+        xaxis_rangeslider_visible=False,
+        height=600
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
