@@ -301,7 +301,7 @@ def plot_candlestick_chart(df, df_3pm):
         fig.add_annotation(
             x=dt_start,
             y=last_row['open'],
-            text=f"{dt_start.strftime('%b %d')} 3PM Open",
+            text=f"{dt_start.strftime('%b %d')}",
             showarrow=False,
             xanchor="left",
             yanchor="bottom",
@@ -319,7 +319,7 @@ def plot_candlestick_chart(df, df_3pm):
         fig.add_annotation(
             x=dt_start,
             y=last_row['close'],
-            text=f"{dt_start.strftime('%b %d')} 3PM Close",
+            text=f"{dt_start.strftime('%b %d')} ",
             showarrow=False,
             xanchor="left",
             yanchor="top",
