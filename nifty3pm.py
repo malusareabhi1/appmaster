@@ -350,14 +350,14 @@ def plot_candlestick_chart(df, df_3pm):
     )
     return fig
 
+
 def show_trade_metrics(df, label):
     total_trades = len(df)
     wins = df[df['Result'] == '🎯 Target Hit'].shape[0]
     win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
-    avg_pnl = df['P&L'].mean() if total_trades > 0 else 0
-    total_pnl = df['P&L'].sum() if total_trades > 0 else 0
 
-    st.success(f"✅ {label} – Total Trades: {total_trades}, Wins: {wins} ({win_rate:.2f}%), Avg P&L: ₹{avg_pnl:.2f}, Total P&L: ₹{total_pnl:,.2f}")
+    st.success(f"✅ {label} – Total Trades: {total_trades}, Wins: {wins} ({win_rate:.2f}%)")
+
 
 def color_pnl(val):
     color = 'green' if val > 0 else 'red' if val < 0 else 'white'
