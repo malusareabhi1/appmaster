@@ -483,9 +483,9 @@ st.plotly_chart(fig, use_container_width=True)
 
 # Now Live NIFTY Option Chain (NSE)
 st.subheader("📊 Live NIFTY Option Chain (NSE)")
-opt_df = get_nifty_option_chain()
-if not opt_df.empty:
-    st.dataframe(opt_df, use_container_width=True)
+#opt_df = get_nifty_option_chain()
+#if not opt_df.empty:
+    #st.dataframe(opt_df, use_container_width=True)
 
 #import requests
 #import pandas as pd
