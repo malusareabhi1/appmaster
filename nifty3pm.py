@@ -235,9 +235,31 @@ def plot_candlestick_chart(df, df_3pm):
         marker=dict(color='cyan', size=8, symbol='triangle-down')
     ))
 
+
+    # Add horizontal lines for Open and Close of 3PM candles
+    for _, row in df_3pm.iterrows():
+        open_price = row['open']
+        close_price = row['close']
+        dt = row['datetime']
+    
+        fig.add_hline(
+            y=open_price,
+            line_dash="dot",
+            line_color="blue",
+            annotation_text=f"{dt.strftime('%b %d')} 3PM Open: {open_price:.2f}",
+            annotation_position="top left"
+        )
+    
+        fig.add_hline(
+            y=close_price,
+            line_dash="dot",
+            line_color="orange",
+            annotation_text=f"{dt.strftime('%b %d')} 3PM Close: {close_price:.2f}",
+            annotation_position="bottom left"
+        )
     # Add vertical lines for each 3PM candle
-    for dt in df_3pm['datetime']:
-        fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
+   # for dt in df_3pm['datetime']:
+        #fig.add_vline(x=dt, line_width=1, line_dash="dot", line_color="yellow")
 
     fig.update_layout(
         title="NIFTY 15-Min Chart (Last {} Trading Days)".format(analysis_days),
