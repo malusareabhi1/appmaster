@@ -666,7 +666,7 @@ option_chain_df = get_nifty_option_chain_simple()
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
 #################################################################------------------------------------------------------------
 
-def get_nifty_option_chain_simple():
+def get_nifty_option_chain_simple1():
     url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -725,7 +725,7 @@ def get_nifty_option_chain_simple():
     #get_nifty_option_chain_simple()
 
 # Example:
-df_oc = get_nifty_option_chain_simple()
+df_oc = get_nifty_option_chain_simple1()
 #st.dataframe(df_oc, use_container_width=True)
 st.write(df_oc)
 #st.print(df_oc.head())
