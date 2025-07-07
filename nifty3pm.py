@@ -487,8 +487,8 @@ opt_df = get_nifty_option_chain()
 if not opt_df.empty:
     st.dataframe(opt_df, use_container_width=True)
 
-import requests
-import pandas as pd
+#import requests
+#import pandas as pd
 
 def get_nifty_option_chain_simple():
     url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
