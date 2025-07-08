@@ -364,7 +364,7 @@ stop_loss_points = st.sidebar.number_input("Stop Loss Points", value=50, step=5)
 target_points = st.sidebar.number_input("Target Points", value=100, step=5)
 
 # Paper Trading Logic
-def run_paper_trading(price_df, breakout_df, breakdown_df):
+def run_paper_trading0(price_df, breakout_df, breakdown_df):
     trades = []
 
     def get_exit_price(trade_date):
@@ -434,6 +434,92 @@ def run_paper_trading(price_df, breakout_df, breakdown_df):
 
     return pd.DataFrame(trades)
 
+#New Function-----
+
+def run_paper_trading(price_df, breakout_df, breakdown_df, target_points=50, stop_loss_points=30):
+    trades = []
+
+    # Combine breakout and breakdown trades with their type
+    breakout_df = breakout_df.copy()
+    breakout_df['Trade_Type'] = 'CALL'
+    breakdown_df = breakdown_df.copy()
+    breakdown_df['Trade_Type'] = 'PUT'
+
+    all_trades_df = pd.concat([breakout_df, breakdown_df], ignore_index=True)
+
+    for idx, trade in all_trades_df.iterrows():
+        trade_date = trade['3PM Date']
+        entry_price = trade['Breakout Entry'] if trade['Trade_Type'] == 'CALL' else trade['Breakdown Entry']
+        option_buy = trade['Option Buy']
+
+        # Filter intraday data for trade date after 3 PM
+        day_data = price_df[
+            (price_df['datetime'].dt.date == trade_date) & 
+            (price_df['datetime'].dt.time > pd.to_datetime("15:00").time())
+        ].reset_index(drop=True)
+
+        if day_data.empty:
+            # No data after 3 PM on trade date, skip
+            continue
+
+        exit_reason = None
+        exit_price = None
+        exit_time = None
+
+        # Calculate target and stop loss prices
+        target_price = entry_price + target_points if trade['Trade_Type'] == 'CALL' else entry_price - target_points
+        stop_loss_price = entry_price - stop_loss_points if trade['Trade_Type'] == 'CALL' else entry_price + stop_loss_points
+
+        # Iterate over day_data to simulate trade exit
+        for i, row in day_data.iterrows():
+            high = row['high']
+            low = row['low']
+
+            if trade['Trade_Type'] == 'CALL':
+                # Check stop loss hit first
+                if low <= stop_loss_price:
+                    exit_price = stop_loss_price
+                    exit_reason = 'Stop Loss Hit'
+                    exit_time = row['datetime']
+                    break
+                elif high >= target_price:
+                    exit_price = target_price
+                    exit_reason = 'Target Hit'
+                    exit_time = row['datetime']
+                    break
+            else:  # PUT
+                if high >= stop_loss_price:
+                    exit_price = stop_loss_price
+                    exit_reason = 'Stop Loss Hit'
+                    exit_time = row['datetime']
+                    break
+                elif low <= target_price:
+                    exit_price = target_price
+                    exit_reason = 'Target Hit'
+                    exit_time = row['datetime']
+                    break
+
+        # If no exit hit, exit at last candle close (time exit)
+        if exit_price is None:
+            last_row = day_data.iloc[-1]
+            exit_price = last_row['close']
+            exit_time = last_row['datetime']
+            exit_reason = 'Time Exit'
+
+        pnl = (exit_price - entry_price) if trade['Trade_Type'] == 'CALL' else (entry_price - exit_price)
+
+        trades.append({
+            '3PM Date': trade_date,
+            'Option Buy': option_buy,
+            'Trade Type': trade['Trade_Type'],
+            'Entry Price': round(entry_price, 2),
+            'Exit Price': round(exit_price, 2),
+            'Exit Time': exit_time,
+            'Exit Reason': exit_reason,
+            'P&L': round(pnl, 2)
+        })
+
+    return pd.DataFrame(trades)
 
 
 # After generating trade_log_df and breakdown_df, combine for paper trading:
