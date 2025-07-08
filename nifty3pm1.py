@@ -152,18 +152,6 @@ def generate_trade_logs(df, offset, option_chain_df):
 
     return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
 
-# ✅ Load data
-raw_df = load_nifty_data(period=f"{analysis_days}d")
-if raw_df.empty:
-    st.stop()
-
-df = df.rename(columns={
-    'open_^nsei': 'open',
-    'high_^nsei': 'high',
-    'low_^nsei': 'low',
-    'close_^nsei': 'close',
-    'volume_^nsei': 'volume'
-})
 
 
 # ✅ Step 1: Load data
