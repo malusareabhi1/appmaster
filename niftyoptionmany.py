@@ -696,6 +696,8 @@ df = df.rename(columns={
 
 # ✅ Filter last N days
 df = filter_last_n_days(df, analysis_days)
+# Now df is fully clean
+df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
 # Strategy-specific inputs and processing
 if strategy == "930 CE/PE Strategy":
     analysis_days=3
@@ -714,8 +716,7 @@ if strategy == "930 CE/PE Strategy":
     st.subheader("🔍 Strategy: 930 CE/PE Breakout")
    
     
-    # Now df is fully clean
-    df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+    
     # Plot chart
     fig = plot_candlestick_chart(df, df_3pm)
     st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
