@@ -186,7 +186,21 @@ def load_nifty_data():
             df['low'] = df[col]
         if 'volume' in col.lower() and 'volume' not in df.columns:
             df['volume'] = df[col]
-    
+
+    for col in df.columns:
+        col_str = str(col).lower()
+        if 'open' in col_str and 'open' not in df.columns:
+            df['open'] = df[col]
+        if 'close' in col_str and 'close' not in df.columns:
+            df['close'] = df[col]
+        if 'high' in col_str and 'high' not in df.columns:
+            df['high'] = df[col]
+        if 'low' in col_str and 'low' not in df.columns:
+            df['low'] = df[col]
+        if 'volume' in col_str and 'volume' not in df.columns:
+            df['volume'] = df[col]
+
+    st.write("Columns from Yahoo Finance: After", df.columns.tolist())
     return df
 
     #return df
