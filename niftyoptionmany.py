@@ -339,10 +339,7 @@ if strategy == "930 CE/PE Strategy":
     target = st.sidebar.number_input("🎯 Target (Points)", value=50)
     stoploss = st.sidebar.number_input("🛑 Stop Loss (%)", value=5)
 
-    # Plot chart
-    fig = plot_candlestick_chart(df, df_3pm)
-    st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
-    st.plotly_chart(fig, use_container_width=True)
+    
 
     st.subheader("🔍 Strategy: 930 CE/PE Breakout")
     # ✅ Load price data
@@ -364,7 +361,10 @@ if strategy == "930 CE/PE Strategy":
     
     # Now df is fully clean
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
-    
+    # Plot chart
+    fig = plot_candlestick_chart(df, df_3pm)
+    st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
+    st.plotly_chart(fig, use_container_width=True)
     #st.write("Available columns:", df.columns.tolist())
     required_cols = ['datetime', 'open', 'high', 'low', 'close']
     
