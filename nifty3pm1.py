@@ -354,6 +354,6 @@ st.dataframe(trade_log_df)
 st.subheader("\U0001F4C4 Breakdown Trade Log (PUTS)")
 st.dataframe(breakdown_df)
 
-if not option_chain_df.empty:
-    st.subheader("\U0001F4CA NSE Option Chain Snapshot")
-    st.dataframe(option_chain_df.head(20))
+#if not option_chain_df.empty:
+    #st.subheader("\U0001F4CA NSE Option Chain Snapshot")
+    #st.dataframe(option_chain_df.head(20))
