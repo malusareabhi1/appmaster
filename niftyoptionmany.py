@@ -170,7 +170,7 @@ def load_nifty_data():
     df.reset_index(inplace=True)
 
     # Print available columns for debugging
-    st.write("✅ Columns from Yahoo:", df.columns.tolist())
+    #st.write("✅ Columns from Yahoo:", df.columns.tolist())
 
     # Normalize all column names to lowercase
     df.columns = [str(col).lower() for col in df.columns]
@@ -187,7 +187,7 @@ def load_nifty_data():
         'date': 'datetime'
     }
     df.rename(columns=rename_map, inplace=True)
-
+    st.write("✅ Columns from Yahoo:", df.columns.tolist())
     # Ensure essential columns are present
     required_cols = ['open', 'high', 'low', 'close']
     for col in required_cols:
