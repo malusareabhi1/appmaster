@@ -188,8 +188,40 @@ if strategy == "930 CE/PE Strategy":
     stoploss = st.sidebar.number_input("🛑 Stop Loss (%)", value=5)
 
     st.subheader("🔍 Strategy: 930 CE/PE Breakout")
-    df = run_930_ce_pe_strategy(target, stoploss)
-    st.dataframe(df)
+    # ✅ Load price data
+    df = load_nifty_data(period=f"{analysis_days}d")
+    if df.empty:
+        st.stop()
+    
+    # ✅ Rename columns if needed
+    df = df.rename(columns={
+        'open_^nsei': 'open',
+        'high_^nsei': 'high',
+        'low_^nsei': 'low',
+        'close_^nsei': 'close',
+        'volume_^nsei': 'volume'
+    })
+    
+    # ✅ Filter last N days
+    df = filter_last_n_days(df, analysis_days)
+    
+    # Now df is fully clean
+    df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+    
+    #st.write("Available columns:", df.columns.tolist())
+    required_cols = ['datetime', 'open', 'high', 'low', 'close']
+    
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        st.error(f"Missing columns: {missing_cols}")
+        st.stop()
+        #df = run_930_ce_pe_strategy(target, stoploss)
+        paper_trades_df = run_paper_trading(df, trade_log_df, breakdown_df)
+
+
+        st.subheader("📋 Paper Trading Results")
+        st.dataframe(paper_trades_df)
+        st.dataframe(df)
 
 elif strategy == "SMA Crossover Strategy":
     st.sidebar.subheader("📊 Parameters")
