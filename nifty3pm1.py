@@ -666,7 +666,7 @@ st.markdown(f"""
 #st.write("Sample Paper Trading Data:", paper_trades_df.head())
 #paper_trades_df = run_paper_trading(df, all_trades_df)
 # Run strategy
-paper_trades_df = run_930_ce_pe_strategy(price_df, option_chain_df)
+paper_trades_df = run_930_ce_pe_strategy(df, option_chain_df)
 
 # Show results
 st.subheader("🧾 Paper Trading Results – 9:30 CE/PE Strategy")
