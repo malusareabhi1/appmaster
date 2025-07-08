@@ -183,6 +183,7 @@ strategy = st.sidebar.selectbox("Select Strategy", [
 
 # Strategy-specific inputs and processing
 if strategy == "930 CE/PE Strategy":
+    analysis_days=3
     st.sidebar.subheader("📊 Parameters")
     target = st.sidebar.number_input("🎯 Target (Points)", value=50)
     stoploss = st.sidebar.number_input("🛑 Stop Loss (%)", value=5)
