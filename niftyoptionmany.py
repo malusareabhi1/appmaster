@@ -8,7 +8,7 @@ import numpy as np
 import requests
 #from datetime import datetime
 import datetime
-
+analysis_days=4
 
 # ---------------- Sample Strategy Functions ----------------
 def run_sma_crossover_option_strategy(price_df, option_chain_df, target_points=50, sl_pct=5):
