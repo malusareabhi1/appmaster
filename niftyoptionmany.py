@@ -7,6 +7,125 @@ from datetime import datetime
 # Your existing strategy functions (run_930_ce_pe_strategy, run_sma_crossover_option_strategy) here
 # (Make sure these functions are defined above this Streamlit app code)
 
+def run_930_ce_pe_strategy(price_df, option_chain_df, target_points=50, sl_pct=5):
+    trades = []
+
+    price_df = price_df.sort_values('datetime')
+    unique_dates = sorted(price_df['datetime'].dt.date.unique())
+
+    for i in range(1, len(unique_dates)):
+        today = unique_dates[i]
+        prev_day = unique_dates[i - 1]
+
+        # Get 3PM candle of previous day
+        prev_day_3pm = price_df[
+            (price_df['datetime'].dt.date == prev_day) &
+            (price_df['datetime'].dt.hour == 15) &
+            (price_df['datetime'].dt.minute == 0)
+        ]
+        if prev_day_3pm.empty:
+            continue
+
+        threepm_candle = prev_day_3pm.iloc[0]
+        threepm_open = threepm_candle['open']
+        threepm_close = threepm_candle['close']
+
+        # Get 9:30 AM candle of today
+        candle_930 = price_df[
+            (price_df['datetime'].dt.date == today) &
+            (price_df['datetime'].dt.hour == 9) &
+            (price_df['datetime'].dt.minute == 30)
+        ]
+        if candle_930.empty:
+            continue
+
+        candle_930 = candle_930.iloc[0]
+        spot_930 = candle_930['close']
+
+        # Find ATM strike
+        strikes = sorted(option_chain_df['strikePrice'].dropna())
+        atm_strike = min(strikes, key=lambda x: abs(x - spot_930))
+
+        # Check both CE and PE conditions
+        if spot_930 > threepm_open and spot_930 > threepm_close:
+            option_type = "CE"
+            symbol = f"NIFTY_CE_{atm_strike}"
+            entry_price = option_chain_df.loc[option_chain_df['strikePrice'] == atm_strike, 'CE_LTP'].values[0]
+            stop_loss_price = entry_price - (entry_price * sl_pct / 100)
+            target_spot = spot_930 + target_points
+        elif spot_930 < threepm_open and spot_930 < threepm_close:
+            option_type = "PE"
+            symbol = f"NIFTY_PE_{atm_strike}"
+            entry_price = option_chain_df.loc[option_chain_df['strikePrice'] == atm_strike, 'PE_LTP'].values[0]
+            stop_loss_price = entry_price - (entry_price * sl_pct / 100)
+            target_spot = spot_930 - target_points
+        else:
+            continue
+
+        if pd.isna(entry_price) or entry_price == 0:
+            continue
+
+        exit_price = None
+        exit_time = None
+        exit_reason = "Time Exit"
+
+        intraday_data = price_df[
+            (price_df['datetime'].dt.date == today) &
+            (price_df['datetime'].dt.time >= pd.to_datetime("09:45").time()) &
+            (price_df['datetime'].dt.time <= pd.to_datetime("11:00").time())
+        ]
+
+        for _, row in intraday_data.iterrows():
+            nifty_spot = row['close']
+            time = row['datetime']
+
+            # Simulated option price movement
+            multiplier = 0.7
+            delta = nifty_spot - spot_930 if option_type == "CE" else spot_930 - nifty_spot
+            simulated_option_price = entry_price + (delta * multiplier)
+
+            if simulated_option_price <= stop_loss_price:
+                exit_price = stop_loss_price
+                exit_time = time
+                exit_reason = "Stop Loss Hit"
+                break
+            elif (option_type == "CE" and nifty_spot >= target_spot) or (option_type == "PE" and nifty_spot <= target_spot):
+                exit_price = simulated_option_price
+                exit_time = time
+                exit_reason = "Target Hit"
+                break
+
+        if exit_price is None:
+            last_candle = intraday_data[intraday_data['datetime'].dt.time == pd.to_datetime("11:00").time()]
+            if not last_candle.empty:
+                nifty_end = last_candle.iloc[0]['close']
+                delta = nifty_end - spot_930 if option_type == "CE" else spot_930 - nifty_end
+                exit_price = entry_price + (delta * multiplier)
+                exit_time = last_candle.iloc[0]['datetime']
+
+        #pnl = round(exit_price - entry_price, 2)
+        if exit_price is None or entry_price is None:
+            continue  # skip trade with missing data
+        
+        pnl = round(exit_price - entry_price, 2)
+
+
+        trades.append({
+            'Date': today,
+            'Entry Spot': spot_930,
+            'Target Spot': target_spot,
+            'Option': symbol,
+            'Trade Type': option_type,
+            'Entry Price': round(entry_price, 2),
+            'Exit Price': round(exit_price, 2),
+            'Exit Time': exit_time,
+            'Exit Reason': exit_reason,
+            'P&L': pnl
+        })
+
+    return pd.DataFrame(trades)
+
+
 # Example minimal option chain fetcher (you can replace with your own function)
 @st.cache_data(ttl=300)
 def get_nifty_option_chain_simple():
