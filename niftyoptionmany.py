@@ -680,19 +680,20 @@ strategy = st.sidebar.selectbox("Select Strategy", [
     "SMA Crossover Strategy"
 ])
  # ✅ Load price data
-    df = load_nifty_data(period=f"{analysis_days}d")
-    if df.empty:
-        st.stop()
+df = load_nifty_data(period=f"{analysis_days}d")
+if df.empty:
+    st.stop()
     
-    # ✅ Rename columns if needed
-    df = df.rename(columns={
+# ✅ Rename columns if needed
+df = df.rename(columns={
         'open_^nsei': 'open',
         'high_^nsei': 'high',
         'low_^nsei': 'low',
         'close_^nsei': 'close',
         'volume_^nsei': 'volume'
-    })
+})
     
+
     # ✅ Filter last N days
     df = filter_last_n_days(df, analysis_days)
 # Strategy-specific inputs and processing
