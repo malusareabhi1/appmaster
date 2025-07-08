@@ -161,36 +161,47 @@ def get_nifty_option_chain_simple():
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
-@st.cache_data(ttl=3600)
 def load_nifty_data():
     df = yf.download("^NSEI", interval="15m", period="10d", progress=False)
+
+    if df.empty:
+        raise ValueError("❌ Yahoo Finance returned no data for NIFTY.")
+
     df.reset_index(inplace=True)
 
-    # Standardize column names to lowercase
+    # Print available columns for debugging
+    st.write("✅ Columns from Yahoo:", df.columns.tolist())
+
+    # Normalize all column names to lowercase
     df.columns = [str(col).lower() for col in df.columns]
 
-    # Rename 'open', 'high', 'low', 'close', 'volume' if needed
+    # Rename columns for consistency (in case they are capitalized)
     rename_map = {
         'open': 'open',
         'high': 'high',
         'low': 'low',
         'close': 'close',
+        'adj close': 'adj_close',
         'volume': 'volume',
         'datetime': 'datetime',
         'date': 'datetime'
     }
+    df.rename(columns=rename_map, inplace=True)
 
-    # Ensure essential columns exist
-    for std_col in ['open', 'high', 'low', 'close']:
-        if std_col not in df.columns:
-            raise ValueError(f"❌ Missing required column: {std_col}")
+    # Ensure essential columns are present
+    required_cols = ['open', 'high', 'low', 'close']
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"❌ Missing required column: {col}")
 
     # Fix datetime
     if 'datetime' not in df.columns:
         if 'date' in df.columns:
             df['datetime'] = pd.to_datetime(df['date'])
+        elif 'index' in df.columns:
+            df['datetime'] = pd.to_datetime(df['index'])
         else:
-            raise ValueError("❌ No datetime or date column found.")
+            raise ValueError("❌ No 'datetime' column found.")
 
     df['datetime'] = pd.to_datetime(df['datetime'])
     if df['datetime'].dt.tz is None:
