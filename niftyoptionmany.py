@@ -739,7 +739,7 @@ if strategy == "930 CE/PE Strategy":
     st.dataframe(paper_trades_df)
     #st.dataframe(df)
 
-elif strategy == "SMA Crossover Option Strategy":
+elif strategy == "SMA Crossover Strategy":
     st.sidebar.markdown("**Parameters:**")
     target_points = st.sidebar.number_input("Target Points", value=50)
     stop_loss_pct = st.sidebar.number_input("Stop Loss %", value=5)
