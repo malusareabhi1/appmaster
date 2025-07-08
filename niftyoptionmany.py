@@ -11,7 +11,17 @@ import datetime
 
 
 # ---------------- Sample Strategy Functions ----------------
+# ✅ Safe Strike Extract
+@st.cache_data(ttl=300)
+def get_strike_list(option_chain_df):
+    if 'strikePrice' not in option_chain_df.columns:
+        st.error("❌ 'strikePrice' column missing in option chain data.")
+        st.write("Columns available:", option_chain_df.columns.tolist())
+        return []
+    return sorted(option_chain_df['strikePrice'].dropna().unique().tolist())
 
+def find_nearest_strike(strikes, spot_price):
+    return min(strikes, key=lambda x: abs(x - spot_price)) if strikes else None
 # ✅ Option Chain (Safe Parsing)
 def get_nifty_option_chain_simple():
     url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
