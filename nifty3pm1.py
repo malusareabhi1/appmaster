@@ -676,3 +676,22 @@ paper_trades_df = run_930_ce_pe_strategy(df, option_chain_df)
 # Show results
 st.subheader("🧾 Paper Trading Results – 9:30 CE/PE Strategy")
 st.dataframe(paper_trades_df)
+# 🧮 Summary Metrics
+wins = len(paper_trades_df[paper_trades_df['P&L'] > 0])
+losses = len(paper_trades_df[paper_trades_df['P&L'] <= 0])
+total_trades = len(paper_trades_df)
+total_pnl = paper_trades_df['P&L'].sum()
+average_pnl = paper_trades_df['P&L'].mean()
+win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+
+# 📊 Display
+st.subheader("📊 Trade Performance Summary")
+st.markdown(f"""
+- 🧾 **Total Trades:** {total_trades}  
+- 🟢 **Winning Trades:** {wins}  
+- 🔴 **Losing Trades:** {losses}  
+- 💰 **Total P&L:** ₹{total_pnl:.2f}  
+- 📈 **Average P&L per Trade:** ₹{average_pnl:.2f}  
+- 🏆 **Win Rate:** {win_rate:.2f}%
+""")
+
