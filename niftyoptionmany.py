@@ -161,47 +161,42 @@ def get_nifty_option_chain_simple():
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
-def load_nifty_data():
-    df = yf.download("^NSEI", interval="15m", period="10d", progress=False)
-    df.reset_index(inplace=True)
-    #st.write("Columns from Yahoo Finance:", df.columns.tolist())
-    df['datetime'] = pd.to_datetime(df['Datetime'] if 'Datetime' in df.columns else df['datetime'])
-    if df['datetime'].dt.tz is None:
-        df['datetime'] = df['datetime'].dt.tz_localize('UTC')
-    df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
-    # Rename columns to standard names
-    df.rename(columns={
-        'Open': 'open', 'High': 'high', 'Low': 'low', 'Close': 'close', 'Volume': 'volume'
-    }, inplace=True)
-    
-    # Handle cases where column names have suffix like 'open_^NSEI'
-    for col in df.columns:
-        if 'open' in col.lower() and 'open' not in df.columns:
-            df['open'] = df[col]
-        if 'close' in col.lower() and 'close' not in df.columns:
-            df['close'] = df[col]
-        if 'high' in col.lower() and 'high' not in df.columns:
-            df['high'] = df[col]
-        if 'low' in col.lower() and 'low' not in df.columns:
-            df['low'] = df[col]
-        if 'volume' in col.lower() and 'volume' not in df.columns:
-            df['volume'] = df[col]
+def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
+    try:
+        df = yf.download(ticker, interval=interval, period=period, progress=False)
+        if df.empty:
+            st.error("❌ No data returned from yfinance.")
+            return pd.DataFrame()
 
-    for col in df.columns:
-        col_str = str(col).lower()
-        if 'open' in col_str and 'open' not in df.columns:
-            df['open'] = df[col]
-        if 'close' in col_str and 'close' not in df.columns:
-            df['close'] = df[col]
-        if 'high' in col_str and 'high' not in df.columns:
-            df['high'] = df[col]
-        if 'low' in col_str and 'low' not in df.columns:
-            df['low'] = df[col]
-        if 'volume' in col_str and 'volume' not in df.columns:
-            df['volume'] = df[col]
+        df.reset_index(inplace=True)
+        #df.columns = [col.lower() for col in df.columns]
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
+        
+        df.columns = [col.lower() for col in df.columns]
 
-    st.write("Columns from Yahoo Finance: After", df.columns.tolist())
-    return df
+        #df.rename(columns={'datetime': 'datetime'}, inplace=True)
+        # Try to detect the datetime column name automatically
+        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
+        
+        if not datetime_col:
+            st.error("❌ No datetime column found after reset_index().")
+            st.write("📋 Available columns:", df.columns.tolist())
+            return pd.DataFrame()
+        
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+        
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        if df['datetime'].dt.tz is None:
+            df['datetime'] = df['datetime'].dt.tz_localize('UTC')
+        df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
 
     #return df
 
