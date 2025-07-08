@@ -154,14 +154,12 @@ def generate_trade_logs(df, offset, option_chain_df):
 
 
 
-# ✅ Step 1: Load data
+# ✅ Load price data
 df = load_nifty_data(period=f"{analysis_days}d")
-
-# ✅ Step 2: Exit if empty
 if df.empty:
     st.stop()
 
-# ✅ Step 3: Rename ^nsei columns
+# ✅ Rename columns if needed
 df = df.rename(columns={
     'open_^nsei': 'open',
     'high_^nsei': 'high',
@@ -170,11 +168,18 @@ df = df.rename(columns={
     'volume_^nsei': 'volume'
 })
 
-# ✅ Step 4: Filter by last N days
+# ✅ Filter last N days
 df = filter_last_n_days(df, analysis_days)
 
-# ✅ Step 5: Generate trades
+# ✅ Load option chain (must come before trade log generation!)
+option_chain_df = get_nifty_option_chain_simple()
+if option_chain_df.empty:
+    st.warning("⚠️ Option chain data is empty.")
+    st.stop()
+
+# ✅ Now it's safe to call this
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
+
 
 
 # ✅ Display results
