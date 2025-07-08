@@ -26,7 +26,12 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
             return pd.DataFrame()
 
         df.reset_index(inplace=True)
+        #df.columns = [col.lower() for col in df.columns]
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
+        
         df.columns = [col.lower() for col in df.columns]
+
         df.rename(columns={'datetime': 'datetime'}, inplace=True)
         df['datetime'] = pd.to_datetime(df['datetime'])
         if df['datetime'].dt.tz is None:
