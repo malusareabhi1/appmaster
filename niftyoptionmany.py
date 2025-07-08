@@ -11,6 +11,78 @@ import datetime
 
 
 # ---------------- Sample Strategy Functions ----------------
+
+# Paper Trading Logic
+def run_paper_trading0(price_df, breakout_df, breakdown_df):
+    trades = []
+
+    def get_exit_price(trade_date):
+        # trade_date is likely a datetime.date or Timestamp
+        if isinstance(trade_date, pd.Timestamp):
+            next_day = trade_date + pd.Timedelta(days=1)
+            next_day_date = next_day.date()
+        elif isinstance(trade_date, (datetime.date, datetime.datetime)):
+            # If it's a date, add one day directly
+            next_day_date = trade_date + pd.Timedelta(days=1)
+            # If next_day_date is datetime.date or datetime.datetime, keep it
+        else:
+            # fallback
+            next_day_date = trade_date
+        
+        next_day_data = price_df[price_df['datetime'].dt.date == next_day_date]
+        if not next_day_data.empty:
+            last_row = next_day_data.iloc[-1]
+            return last_row['close'], last_row['datetime']
+        else:
+            # fallback: get last available data on trade_date
+            day_data = price_df[price_df['datetime'].dt.date == (trade_date.date() if hasattr(trade_date, 'date') else trade_date)]
+            if not day_data.empty:
+                last_row = day_data.iloc[-1]
+                return last_row['close'], last_row['datetime']
+            else:
+                # no data found, return NaN
+                return np.nan, None
+
+    for _, row in breakout_df.iterrows():
+        trade_date = row['3PM Date']
+        entry_price = row['Breakout Entry']
+        exit_price, exit_time = get_exit_price(trade_date)
+        if pd.isna(exit_price):
+            continue  # skip if no exit price
+
+        profit = exit_price - entry_price
+
+        trades.append({
+            '3PM Date': trade_date,
+            'Type': 'CALL',
+            'Entry Price': entry_price,
+            'Exit Price': exit_price,
+            'Exit Time': exit_time,
+            'Status': 'Closed',
+            'Profit': profit
+        })
+
+    for _, row in breakdown_df.iterrows():
+        trade_date = row['3PM Date']
+        entry_price = row['Breakdown Entry']
+        exit_price, exit_time = get_exit_price(trade_date)
+        if pd.isna(exit_price):
+            continue  # skip if no exit price
+
+        profit = entry_price - exit_price
+
+        trades.append({
+            '3PM Date': trade_date,
+            'Type': 'PUT',
+            'Entry Price': entry_price,
+            'Exit Price': exit_price,
+            'Exit Time': exit_time,
+            'Status': 'Closed',
+            'Profit': profit
+        })
+
+    return pd.DataFrame(trades)
+
 # ✅ Safe Strike Extract
 @st.cache_data(ttl=300)
 def get_strike_list(option_chain_df):
