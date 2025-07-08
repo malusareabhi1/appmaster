@@ -531,13 +531,14 @@ paper_trades_df = run_paper_trading(df, trade_log_df, breakdown_df)
 
 st.subheader("📋 Paper Trading Results")
 st.dataframe(paper_trades_df)
-
+#st.subheader("📋 Paper Trading Results")
+#st.dataframe(paper_trades_df)
 # Summary statistics
 total_trades = len(paper_trades_df)
-wins = len(paper_trades_df[paper_trades_df['Profit'] > 0])
-losses = len(paper_trades_df[paper_trades_df['Profit'] <= 0])
+wins = len(paper_trades_df[paper_trades_df['P&L'] > 0])
+losses = len(paper_trades_df[paper_trades_df['P&L'] <= 0])
 win_rate = (wins / total_trades * 100) if total_trades else 0
-total_profit = paper_trades_df['Profit'].sum()
+total_profit = paper_trades_df['P&L'].sum()
 
 st.markdown(f"""
 **Total Trades:** {total_trades}  
