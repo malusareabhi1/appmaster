@@ -168,7 +168,27 @@ def load_nifty_data():
     if df['datetime'].dt.tz is None:
         df['datetime'] = df['datetime'].dt.tz_localize('UTC')
     df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+    # Rename columns to standard names
+    df.rename(columns={
+        'Open': 'open', 'High': 'high', 'Low': 'low', 'Close': 'close', 'Volume': 'volume'
+    }, inplace=True)
+    
+    # Handle cases where column names have suffix like 'open_^NSEI'
+    for col in df.columns:
+        if 'open' in col.lower() and 'open' not in df.columns:
+            df['open'] = df[col]
+        if 'close' in col.lower() and 'close' not in df.columns:
+            df['close'] = df[col]
+        if 'high' in col.lower() and 'high' not in df.columns:
+            df['high'] = df[col]
+        if 'low' in col.lower() and 'low' not in df.columns:
+            df['low'] = df[col]
+        if 'volume' in col.lower() and 'volume' not in df.columns:
+            df['volume'] = df[col]
+    
     return df
+
+    #return df
 
 # Streamlit UI starts here
 st.set_page_config(page_title="NIFTY Option Strategy Runner", layout="wide")
