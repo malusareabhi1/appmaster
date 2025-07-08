@@ -58,6 +58,10 @@ def run_sma_crossover_option_strategy(price_df, option_chain_df, target_points=5
                     entry_price = option_chain_df.loc[option_chain_df['strikePrice'] == atm_strike, 'PE_LTP'].values[0]
                     target_spot = entry_spot - target_points
 
+                if pd.isna(entry_price) or entry_price == 0:
+                    in_position = False
+                    continue
+
                 stop_loss_price = entry_price - (entry_price * sl_pct / 100)
                 entry_time = entry_row['datetime']
                 continue
@@ -69,33 +73,33 @@ def run_sma_crossover_option_strategy(price_df, option_chain_df, target_points=5
             delta = nifty_price - entry_spot if option_type == "CE" else entry_spot - nifty_price
             simulated_option_price = entry_price + (delta * multiplier)
 
+            exit_reason = None
             if simulated_option_price <= stop_loss_price:
                 exit_reason = "Stop Loss Hit"
             elif (option_type == "CE" and nifty_price >= target_spot) or (option_type == "PE" and nifty_price <= target_spot):
                 exit_reason = "Target Hit"
             elif current_time.time() >= pd.to_datetime("15:15").time():
                 exit_reason = "Time Exit"
-            else:
-                continue  # Still in trade
 
-            trades.append({
-                'Date': date,
-                'Entry Spot': entry_spot,
-                'Target Spot': target_spot,
-                'Option': symbol,
-                'Trade Type': option_type,
-                'Entry Price': round(entry_price, 2),
-                'Exit Price': round(simulated_option_price, 2),
-                'Exit Time': current_time,
-                'Exit Reason': exit_reason,
-                'P&L': round(simulated_option_price - entry_price, 2)
-            })
+            if exit_reason:
+                trades.append({
+                    'Date': date,
+                    'Entry Spot': entry_spot,
+                    'Target Spot': target_spot,
+                    'Option': symbol,
+                    'Trade Type': option_type,
+                    'Entry Price': round(entry_price, 2),
+                    'Exit Price': round(simulated_option_price, 2),
+                    'Exit Time': current_time,
+                    'Exit Reason': exit_reason,
+                    'P&L': round(simulated_option_price - entry_price, 2)
+                })
 
-            # Reset state
-            in_position = False
-            entry_row = None
-            entry_price = None
-            option_type = None
+                # Reset state
+                in_position = False
+                entry_row = None
+                entry_price = None
+                option_type = None
 
     return pd.DataFrame(trades)
 
@@ -751,7 +755,7 @@ elif strategy == "SMA Crossover Strategy":
 
     
 
-    st.subheader("🔍 Strategy: 930 CE/PE Breakout")
+    st.subheader("🔍 Strategy:SMA Crossover Strategy")
     # ✅ Load price data
     df = load_nifty_data(period=f"{analysis_days}d")
     if df.empty:
@@ -769,10 +773,15 @@ elif strategy == "SMA Crossover Strategy":
     # ✅ Filter last N days
     df = filter_last_n_days(df, analysis_days)
 
-    
+    # Plot chart
+    fig = plot_candlestick_chart(df, df_3pm)
+    st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
+    st.plotly_chart(fig, use_container_width=True)
 
     with st.spinner("Running SMA Crossover Option Strategy..."):
         trades_df = run_sma_crossover_option_strategy(df, option_chain_df, target_points=target_points, sl_pct=stop_loss_pct)
         st.dataframe(trades_df)
+
+
 
 
