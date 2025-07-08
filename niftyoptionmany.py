@@ -743,9 +743,36 @@ elif strategy == "SMA Crossover Strategy":
     st.sidebar.markdown("**Parameters:**")
     target_points = st.sidebar.number_input("Target Points", value=50)
     stop_loss_pct = st.sidebar.number_input("Stop Loss %", value=5)
+    # ✅ Load option chain (must come before trade log generation!)
+    option_chain_df = get_nifty_option_chain_simple()
+    if option_chain_df.empty:
+        st.warning("⚠️ Option chain data is empty.")
+        st.stop()
+
+    
+
+    st.subheader("🔍 Strategy: 930 CE/PE Breakout")
+    # ✅ Load price data
+    df = load_nifty_data(period=f"{analysis_days}d")
+    if df.empty:
+        st.stop()
+    
+    # ✅ Rename columns if needed
+    df = df.rename(columns={
+        'open_^nsei': 'open',
+        'high_^nsei': 'high',
+        'low_^nsei': 'low',
+        'close_^nsei': 'close',
+        'volume_^nsei': 'volume'
+    })
+    
+    # ✅ Filter last N days
+    df = filter_last_n_days(df, analysis_days)
+
+    
 
     with st.spinner("Running SMA Crossover Option Strategy..."):
-        trades_df = run_sma_crossover_option_strategy(price_df, option_chain_df, target_points=target_points, sl_pct=stop_loss_pct)
+        trades_df = run_sma_crossover_option_strategy(df, option_chain_df, target_points=target_points, sl_pct=stop_loss_pct)
         st.dataframe(trades_df)
 
 
