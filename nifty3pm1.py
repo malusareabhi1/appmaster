@@ -695,3 +695,25 @@ st.markdown(f"""
 - 🏆 **Win Rate:** {win_rate:.2f}%
 """)
 
+
+# 📅 Group by Date and summarize P&L
+daywise_summary = paper_trades_df.groupby('Date').agg(
+    Trades=('P&L', 'count'),
+    Wins=('P&L', lambda x: (x > 0).sum()),
+    Losses=('P&L', lambda x: (x <= 0).sum()),
+    Total_PnL=('P&L', 'sum'),
+    Avg_PnL=('P&L', 'mean')
+).reset_index()
+
+# Add Win Rate column
+daywise_summary['Win Rate (%)'] = (daywise_summary['Wins'] / daywise_summary['Trades']) * 100
+
+# Display in Streamlit
+st.subheader("📅 Day-wise Performance")
+st.dataframe(daywise_summary.style.format({
+    'Total_PnL': '₹{:.2f}',
+    'Avg_PnL': '₹{:.2f}',
+    'Win Rate (%)': '{:.2f}%'
+}))
+
+
