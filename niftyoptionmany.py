@@ -648,7 +648,7 @@ if strategy == "930 CE/PE Strategy":
 
     st.subheader("📋 Paper Trading Results")
     st.dataframe(paper_trades_df)
-    st.dataframe(df)
+    #st.dataframe(df)
 
 elif strategy == "SMA Crossover Strategy":
     st.sidebar.subheader("📊 Parameters")
