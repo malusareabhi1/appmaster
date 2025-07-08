@@ -11,6 +11,54 @@ import datetime
 
 
 # ---------------- Sample Strategy Functions ----------------
+# ✅ Main Trade Logic
+def generate_trade_logs(df, offset, option_chain_df):
+    df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+    strikes = get_strike_list(option_chain_df)
+    if not strikes:
+        return pd.DataFrame(), pd.DataFrame()
+
+    breakout_logs = []
+    breakdown_logs = []
+
+    for i in range(len(df_3pm) - 1):
+        current = df_3pm.iloc[i]
+        next_day_date = df_3pm.iloc[i + 1]['datetime'].date()
+
+        threepm_high = current['high']
+        threepm_close = current['close']
+        spot = current['close']
+
+        entry_breakout = threepm_high + offset
+        entry_breakdown = threepm_close - offset
+
+        strike = find_nearest_strike(strikes, spot)
+        ce_symbol = f"NIFTY11JUL24{strike}CE"
+        pe_symbol = f"NIFTY11JUL24{strike}PE"
+
+        # Breakout Log
+        breakout_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Spot': round(spot, 2),
+            '3PM High': round(threepm_high, 2),
+            'Breakout Entry': round(entry_breakout, 2),
+            'Option Buy': ce_symbol,
+            'Type': 'CALL'
+        })
+
+        # Breakdown Log
+        breakdown_logs.append({
+            '3PM Date': current['datetime'].date(),
+            'Spot': round(spot, 2),
+            '3PM Close': round(threepm_close, 2),
+            'Breakdown Entry': round(entry_breakdown, 2),
+            'Option Buy': pe_symbol,
+            'Type': 'PUT'
+        })
+
+    return pd.DataFrame(breakout_logs), pd.DataFrame(breakdown_logs)
+
+
 
 def plot_candlestick_chart(df, df_3pm):
     fig = go.Figure(data=[go.Candlestick(
@@ -372,6 +420,15 @@ if strategy == "930 CE/PE Strategy":
     fig = plot_candlestick_chart(df, df_3pm)
     st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
     st.plotly_chart(fig, use_container_width=True)
+
+    # ✅ Now it's safe to call this
+    trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
+    # ✅ Display results
+    st.subheader("\U0001F4C4 Breakout Trade Log (CALLS)")
+    st.dataframe(trade_log_df)
+    
+    st.subheader("\U0001F4C4 Breakdown Trade Log (PUTS)")
+    st.dataframe(breakdown_df)
     #st.write("Available columns:", df.columns.tolist())
     required_cols = ['datetime', 'open', 'high', 'low', 'close']
     
