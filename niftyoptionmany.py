@@ -196,6 +196,11 @@ if strategy == "930 CE/PE Strategy":
     target = st.sidebar.number_input("🎯 Target (Points)", value=50)
     stoploss = st.sidebar.number_input("🛑 Stop Loss (%)", value=5)
 
+    # Plot chart
+    fig = plot_candlestick_chart(df, df_3pm)
+    st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
+    st.plotly_chart(fig, use_container_width=True)
+
     st.subheader("🔍 Strategy: 930 CE/PE Breakout")
     # ✅ Load price data
     df = load_nifty_data(period=f"{analysis_days}d")
