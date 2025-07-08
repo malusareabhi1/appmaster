@@ -672,7 +672,7 @@ st.markdown(f"""
 #paper_trades_df = run_paper_trading(df, all_trades_df)
 # Run strategy
 paper_trades_df = run_930_ce_pe_strategy(df, option_chain_df)
-
+##########################################################################################################
 # Show results
 st.subheader("🧾 Paper Trading Results – 9:30 CE/PE Strategy")
 st.dataframe(paper_trades_df)
@@ -683,7 +683,7 @@ total_trades = len(paper_trades_df)
 total_pnl = paper_trades_df['P&L'].sum()
 average_pnl = paper_trades_df['P&L'].mean()
 win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
-
+###########################################################################################################
 # 📊 Display
 st.subheader("📊 Trade Performance Summary")
 st.markdown(f"""
@@ -695,7 +695,7 @@ st.markdown(f"""
 - 🏆 **Win Rate:** {win_rate:.2f}%
 """)
 
-
+######################################################################################################
 # 📅 Group by Date and summarize P&L
 daywise_summary = paper_trades_df.groupby('Date').agg(
     Trades=('P&L', 'count'),
