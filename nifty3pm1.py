@@ -157,6 +157,15 @@ raw_df = load_nifty_data(period=f"{analysis_days}d")
 if raw_df.empty:
     st.stop()
 
+df = df.rename(columns={
+    'open_^nsei': 'open',
+    'high_^nsei': 'high',
+    'low_^nsei': 'low',
+    'close_^nsei': 'close',
+    'volume_^nsei': 'volume'
+})
+
+
 df = filter_last_n_days(raw_df, analysis_days)
 option_chain_df = get_nifty_option_chain_simple()
 st.write("✅ Final df columns:", df.columns.tolist())
