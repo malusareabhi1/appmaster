@@ -357,3 +357,110 @@ st.dataframe(breakdown_df)
 #if not option_chain_df.empty:
     #st.subheader("\U0001F4CA NSE Option Chain Snapshot")
     #st.dataframe(option_chain_df.head(20))
+
+# Parameters for paper trading (add near your sidebar or constants)
+stop_loss_points = st.sidebar.number_input("Stop Loss Points", value=50, step=5)
+target_points = st.sidebar.number_input("Target Points", value=100, step=5)
+
+# Paper Trading Logic
+def run_paper_trading(df, trades_df):
+    trades = []
+    for idx, trade in trades_df.iterrows():
+        trade_date = trade['3PM Date']
+        entry_price = trade['Breakout Entry'] if trade['Type'] == 'CALL' else trade['Breakdown Entry']
+        trade_type = trade['Type']
+
+        # Filter intraday data for the day after trade_date (simulate next day trading)
+        day_data = df[(df['datetime'].dt.date > trade_date) & 
+                      (df['datetime'].dt.date <= trade_date + pd.Timedelta(days=1))]
+        
+        if day_data.empty:
+            continue
+
+        sl = entry_price - stop_loss_points if trade_type == 'CALL' else entry_price + stop_loss_points
+        target = entry_price + target_points if trade_type == 'CALL' else entry_price - target_points
+
+        status = "Open"
+        exit_price = None
+        exit_time = None
+        profit = None
+
+        # Simulate trade exit by scanning intraday high/low after entry
+        for _, row in day_data.iterrows():
+            high = row['high']
+            low = row['low']
+            current_time = row['datetime']
+
+            if trade_type == 'CALL':
+                # Check stop loss hit first
+                if low <= sl:
+                    exit_price = sl
+                    exit_time = current_time
+                    profit = exit_price - entry_price
+                    status = "SL Hit"
+                    break
+                # Check target hit
+                elif high >= target:
+                    exit_price = target
+                    exit_time = current_time
+                    profit = exit_price - entry_price
+                    status = "Target Hit"
+                    break
+            else:  # PUT trade
+                if high >= sl:
+                    exit_price = sl
+                    exit_time = current_time
+                    profit = entry_price - exit_price
+                    status = "SL Hit"
+                    break
+                elif low <= target:
+                    exit_price = target
+                    exit_time = current_time
+                    profit = entry_price - exit_price
+                    status = "Target Hit"
+                    break
+        
+        # If no SL or target hit, close at last price of day
+        if status == "Open":
+            last_close = day_data.iloc[-1]['close']
+            exit_price = last_close
+            exit_time = day_data.iloc[-1]['datetime']
+            profit = (exit_price - entry_price) if trade_type == 'CALL' else (entry_price - exit_price)
+            status = "Closed EOD"
+
+        trades.append({
+            '3PM Date': trade_date,
+            'Type': trade_type,
+            'Entry Price': entry_price,
+            'Exit Price': exit_price,
+            'Exit Time': exit_time,
+            'Status': status,
+            'Profit': round(profit, 2)
+        })
+    
+    return pd.DataFrame(trades)
+
+
+# After generating trade_log_df and breakdown_df, combine for paper trading:
+all_trades_df = pd.concat([trade_log_df, breakdown_df], ignore_index=True)
+
+paper_trades_df = run_paper_trading(df, all_trades_df)
+
+st.subheader("📋 Paper Trading Results")
+st.dataframe(paper_trades_df)
+
+# Summary statistics
+total_trades = len(paper_trades_df)
+wins = len(paper_trades_df[paper_trades_df['Profit'] > 0])
+losses = len(paper_trades_df[paper_trades_df['Profit'] <= 0])
+win_rate = (wins / total_trades * 100) if total_trades else 0
+total_profit = paper_trades_df['Profit'].sum()
+
+st.markdown(f"""
+**Total Trades:** {total_trades}  
+**Wins:** {wins}  
+**Losses:** {losses}  
+**Win Rate:** {win_rate:.2f}%  
+**Total PnL:** ₹{total_profit:.2f}  
+""")
+
