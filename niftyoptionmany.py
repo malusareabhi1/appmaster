@@ -169,32 +169,13 @@ def load_nifty_data():
 
     df.reset_index(inplace=True)
 
-    # Print available columns for debugging
-    #st.write("✅ Columns from Yahoo:", df.columns.tolist())
+    # Flatten MultiIndex if present
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [col[0].lower() if isinstance(col, tuple) else str(col).lower() for col in df.columns]
+    else:
+        df.columns = [str(col).lower() for col in df.columns]
 
-    # Normalize all column names to lowercase
-    df.columns = [str(col).lower() for col in df.columns]
-
-    # Rename columns for consistency (in case they are capitalized)
-    rename_map = {
-        'open': 'open',
-        'high': 'high',
-        'low': 'low',
-        'close': 'close',
-        'adj close': 'adj_close',
-        'volume': 'volume',
-        'datetime': 'datetime',
-        'date': 'datetime'
-    }
-    df.rename(columns=rename_map, inplace=True)
-    st.write("✅ Columns from Yahoo:", df.columns.tolist())
-    # Ensure essential columns are present
-    required_cols = ['open', 'high', 'low', 'close']
-    for col in required_cols:
-        if col not in df.columns:
-            raise ValueError(f"❌ Missing required column: {col}")
-
-    # Fix datetime
+    # Ensure datetime
     if 'datetime' not in df.columns:
         if 'date' in df.columns:
             df['datetime'] = pd.to_datetime(df['date'])
@@ -207,6 +188,13 @@ def load_nifty_data():
     if df['datetime'].dt.tz is None:
         df['datetime'] = df['datetime'].dt.tz_localize('UTC')
     df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+
+    # Final check for required columns
+    required = ['open', 'high', 'low', 'close']
+    for col in required:
+        if col not in df.columns:
+            st.write("Available columns:", df.columns.tolist())  # Debug
+            raise ValueError(f"❌ Missing required column: {col}")
 
     return df
 
