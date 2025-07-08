@@ -4,6 +4,12 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # ---------------- Sample Strategy Functions ----------------
+def filter_last_n_days(df, n_days):
+    df['date'] = df['datetime'].dt.date
+    last_days = sorted(df['date'].unique())[-n_days:]
+    return df[df['date'].isin(last_days)].copy()
+
+
 def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
     try:
         df = yf.download(ticker, interval=interval, period=period, progress=False)
