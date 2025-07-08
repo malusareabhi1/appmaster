@@ -164,7 +164,7 @@ def get_nifty_option_chain_simple():
 def load_nifty_data():
     df = yf.download("^NSEI", interval="15m", period="10d", progress=False)
     df.reset_index(inplace=True)
-    st.write("Columns from Yahoo Finance:", df.columns.tolist())
+    #st.write("Columns from Yahoo Finance:", df.columns.tolist())
     df['datetime'] = pd.to_datetime(df['Datetime'] if 'Datetime' in df.columns else df['datetime'])
     if df['datetime'].dt.tz is None:
         df['datetime'] = df['datetime'].dt.tz_localize('UTC')
