@@ -312,6 +312,17 @@ df = df.rename(columns={
 # ✅ Filter last N days
 df = filter_last_n_days(df, analysis_days)
 
+# Now df is fully clean
+df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
+
+#st.write("Available columns:", df.columns.tolist())
+required_cols = ['datetime', 'open', 'high', 'low', 'close']
+
+missing_cols = [col for col in required_cols if col not in df.columns]
+if missing_cols:
+    st.error(f"Missing columns: {missing_cols}")
+    st.stop()
+
 # ✅ Load option chain (must come before trade log generation!)
 option_chain_df = get_nifty_option_chain_simple()
 if option_chain_df.empty:
@@ -321,6 +332,19 @@ if option_chain_df.empty:
 # ✅ Now it's safe to call this
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
 
+df_3pm = df_3pm.rename(columns={
+    'datetime': 'datetime',
+    'open_^nsei': 'open',
+    'high_^nsei': 'high',
+    'low_^nsei': 'low',
+    'close_^nsei': 'close',
+    'volume_^nsei': 'volume'
+})
+#st.write("📋 df_3pm Columns:", df_3pm.columns.tolist())
+# Plot chart
+fig = plot_candlestick_chart(df, df_3pm)
+st.subheader("🕯️ NIFTY Candlestick Chart (15m)")
+st.plotly_chart(fig, use_container_width=True)
 
 
 # ✅ Display results
