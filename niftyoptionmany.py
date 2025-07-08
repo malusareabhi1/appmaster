@@ -659,7 +659,4 @@ elif strategy == "SMA Crossover Strategy":
     df = run_sma_crossover_strategy(sma_fast, sma_slow)
     st.dataframe(df)
 
-# Add optional summary section
-if 'df' in locals() and not df.empty:
-    st.markdown("---")
-    #st.metric("📈 Total P&L", f"₹{df['P&L'].sum():,.2f}")
+
