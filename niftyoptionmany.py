@@ -11,6 +11,40 @@ import datetime
 
 
 # ---------------- Sample Strategy Functions ----------------
+
+# ✅ Option Chain (Safe Parsing)
+def get_nifty_option_chain_simple():
+    url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.nseindia.com/option-chain"
+    }
+    try:
+        session = requests.Session()
+        session.headers.update(headers)
+        session.get("https://www.nseindia.com", timeout=5)
+        response = session.get(url, timeout=5)
+        data = response.json()
+        records = data['records']['data']
+
+        rows = []
+        for rec in records:
+            strike = rec.get('strikePrice')
+            ce = rec.get('CE', {})
+            pe = rec.get('PE', {})
+            rows.append({
+                'strikePrice': strike,
+                'CE_LTP': ce.get('lastPrice'),
+                'CE_IV': ce.get('impliedVolatility'),
+                'PE_LTP': pe.get('lastPrice'),
+                'PE_IV': pe.get('impliedVolatility')
+            })
+        df = pd.DataFrame(rows)
+        return df
+    except Exception as e:
+        st.error(f"❌ Error fetching option chain: {e}")
+        return pd.DataFrame()
+
 # ✅ Main Trade Logic
 def generate_trade_logs(df, offset, option_chain_df):
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
@@ -394,6 +428,12 @@ if strategy == "930 CE/PE Strategy":
     target = st.sidebar.number_input("🎯 Target (Points)", value=50)
     stoploss = st.sidebar.number_input("🛑 Stop Loss (%)", value=5)
 
+    # ✅ Load option chain (must come before trade log generation!)
+    option_chain_df = get_nifty_option_chain_simple()
+    if option_chain_df.empty:
+        st.warning("⚠️ Option chain data is empty.")
+        st.stop()
+
     
 
     st.subheader("🔍 Strategy: 930 CE/PE Breakout")
@@ -422,7 +462,7 @@ if strategy == "930 CE/PE Strategy":
     st.plotly_chart(fig, use_container_width=True)
 
     # ✅ Now it's safe to call this
-    trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
+    trade_log_df, breakdown_df = generate_trade_logs(df, target, option_chain_df)
     # ✅ Display results
     st.subheader("\U0001F4C4 Breakout Trade Log (CALLS)")
     st.dataframe(trade_log_df)
