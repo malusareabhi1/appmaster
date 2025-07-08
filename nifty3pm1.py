@@ -166,11 +166,28 @@ df = df.rename(columns={
 })
 
 
-df = filter_last_n_days(raw_df, analysis_days)
-option_chain_df = get_nifty_option_chain_simple()
-st.write("✅ Final df columns:", df.columns.tolist())
+# ✅ Step 1: Load data
+df = load_nifty_data(period=f"{analysis_days}d")
 
+# ✅ Step 2: Exit if empty
+if df.empty:
+    st.stop()
+
+# ✅ Step 3: Rename ^nsei columns
+df = df.rename(columns={
+    'open_^nsei': 'open',
+    'high_^nsei': 'high',
+    'low_^nsei': 'low',
+    'close_^nsei': 'close',
+    'volume_^nsei': 'volume'
+})
+
+# ✅ Step 4: Filter by last N days
+df = filter_last_n_days(df, analysis_days)
+
+# ✅ Step 5: Generate trades
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
+
 
 # ✅ Display results
 st.subheader("\U0001F4C4 Breakout Trade Log (CALLS)")
