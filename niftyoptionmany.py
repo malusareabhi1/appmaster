@@ -2,7 +2,43 @@ import streamlit as st
 import pandas as pd
 
 # ---------------- Sample Strategy Functions ----------------
+def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
+    try:
+        df = yf.download(ticker, interval=interval, period=period, progress=False)
+        if df.empty:
+            st.error("❌ No data returned from yfinance.")
+            return pd.DataFrame()
 
+        df.reset_index(inplace=True)
+        #df.columns = [col.lower() for col in df.columns]
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
+        
+        df.columns = [col.lower() for col in df.columns]
+
+        #df.rename(columns={'datetime': 'datetime'}, inplace=True)
+        # Try to detect the datetime column name automatically
+        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
+        
+        if not datetime_col:
+            st.error("❌ No datetime column found after reset_index().")
+            st.write("📋 Available columns:", df.columns.tolist())
+            return pd.DataFrame()
+        
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+        
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        if df['datetime'].dt.tz is None:
+            df['datetime'] = df['datetime'].dt.tz_localize('UTC')
+        df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
+                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
+        
 def run_930_ce_pe_strategy(target, stoploss):
     # Dummy logic (replace with actual)
     data = {
