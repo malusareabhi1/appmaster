@@ -364,40 +364,43 @@ target_points = st.sidebar.number_input("Target Points", value=100, step=5)
 
 # Paper Trading Logic
 def run_paper_trading(price_df, breakout_df, breakdown_df):
-    """
-    Simulate paper trades for breakout (CALL) and breakdown (PUT) options.
-
-    Parameters:
-    - price_df: DataFrame with 'datetime', 'open', 'high', 'low', 'close' prices
-    - breakout_df: DataFrame with breakout trades info (CALLS)
-    - breakdown_df: DataFrame with breakdown trades info (PUTS)
-
-    Returns:
-    - DataFrame with simulated trades and their PnL
-    """
-
     trades = []
 
-    # Helper function to get exit price for next trading day close
     def get_exit_price(trade_date):
-        next_day = trade_date + pd.Timedelta(days=1)
-        next_day_data = price_df[price_df['datetime'].dt.date == next_day.date()]
-        if not next_day_data.empty:
-            # Exit at close price of next day
-            return next_day_data.iloc[-1]['close'], next_day_data.iloc[-1]['datetime']
+        # trade_date is likely a datetime.date or Timestamp
+        if isinstance(trade_date, pd.Timestamp):
+            next_day = trade_date + pd.Timedelta(days=1)
+            next_day_date = next_day.date()
+        elif isinstance(trade_date, (datetime.date, datetime.datetime)):
+            # If it's a date, add one day directly
+            next_day_date = trade_date + pd.Timedelta(days=1)
+            # If next_day_date is datetime.date or datetime.datetime, keep it
         else:
-            # If no next day data, exit at last available price
-            last_row = price_df[price_df['datetime'].dt.date == trade_date].iloc[-1]
+            # fallback
+            next_day_date = trade_date
+        
+        next_day_data = price_df[price_df['datetime'].dt.date == next_day_date]
+        if not next_day_data.empty:
+            last_row = next_day_data.iloc[-1]
             return last_row['close'], last_row['datetime']
+        else:
+            # fallback: get last available data on trade_date
+            day_data = price_df[price_df['datetime'].dt.date == (trade_date.date() if hasattr(trade_date, 'date') else trade_date)]
+            if not day_data.empty:
+                last_row = day_data.iloc[-1]
+                return last_row['close'], last_row['datetime']
+            else:
+                # no data found, return NaN
+                return np.nan, None
 
-    # Process breakout (CALL) trades
     for _, row in breakout_df.iterrows():
         trade_date = row['3PM Date']
         entry_price = row['Breakout Entry']
-
         exit_price, exit_time = get_exit_price(trade_date)
+        if pd.isna(exit_price):
+            continue  # skip if no exit price
 
-        profit = exit_price - entry_price  # Profit for CALL
+        profit = exit_price - entry_price
 
         trades.append({
             '3PM Date': trade_date,
@@ -409,14 +412,14 @@ def run_paper_trading(price_df, breakout_df, breakdown_df):
             'Profit': profit
         })
 
-    # Process breakdown (PUT) trades
     for _, row in breakdown_df.iterrows():
         trade_date = row['3PM Date']
         entry_price = row['Breakdown Entry']
-
         exit_price, exit_time = get_exit_price(trade_date)
+        if pd.isna(exit_price):
+            continue  # skip if no exit price
 
-        profit = entry_price - exit_price  # Profit for PUT
+        profit = entry_price - exit_price
 
         trades.append({
             '3PM Date': trade_date,
@@ -428,10 +431,8 @@ def run_paper_trading(price_df, breakout_df, breakdown_df):
             'Profit': profit
         })
 
-    if not trades:
-        return pd.DataFrame(columns=['3PM Date', 'Type', 'Entry Price', 'Exit Price', 'Exit Time', 'Status', 'Profit'])
-
     return pd.DataFrame(trades)
+
 
 
 # After generating trade_log_df and breakdown_df, combine for paper trading:
