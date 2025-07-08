@@ -694,8 +694,8 @@ df = df.rename(columns={
 })
     
 
-    # ✅ Filter last N days
-    df = filter_last_n_days(df, analysis_days)
+# ✅ Filter last N days
+df = filter_last_n_days(df, analysis_days)
 # Strategy-specific inputs and processing
 if strategy == "930 CE/PE Strategy":
     analysis_days=3
