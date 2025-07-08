@@ -617,7 +617,12 @@ def run_930_ce_pe_strategy(price_df, option_chain_df, target_points=50, sl_pct=5
                 exit_price = entry_price + (delta * multiplier)
                 exit_time = last_candle.iloc[0]['datetime']
 
+        #pnl = round(exit_price - entry_price, 2)
+        if exit_price is None or entry_price is None:
+            continue  # skip trade with missing data
+        
         pnl = round(exit_price - entry_price, 2)
+
 
         trades.append({
             'Date': today,
