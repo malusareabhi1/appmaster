@@ -437,7 +437,9 @@ def run_paper_trading(price_df, breakout_df, breakdown_df):
 # After generating trade_log_df and breakdown_df, combine for paper trading:
 all_trades_df = pd.concat([trade_log_df, breakdown_df], ignore_index=True)
 
-paper_trades_df = run_paper_trading(df, all_trades_df)
+#paper_trades_df = run_paper_trading(df, all_trades_df)
+paper_trades_df = run_paper_trading(df, trade_log_df, breakdown_df)
+
 
 st.subheader("📋 Paper Trading Results")
 st.dataframe(paper_trades_df)
