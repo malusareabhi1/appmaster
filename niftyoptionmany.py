@@ -169,35 +169,28 @@ def load_nifty_data():
 
     df.reset_index(inplace=True)
 
-    # Flatten MultiIndex if present
+    # ✅ Flatten MultiIndex columns
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [col[0].lower() if isinstance(col, tuple) else str(col).lower() for col in df.columns]
+        df.columns = [col[0].lower() for col in df.columns]
     else:
         df.columns = [str(col).lower() for col in df.columns]
 
-    # Ensure datetime
+    # ✅ Ensure 'datetime' column exists and is timezone aware
     if 'datetime' not in df.columns:
-        if 'date' in df.columns:
-            df['datetime'] = pd.to_datetime(df['date'])
-        elif 'index' in df.columns:
-            df['datetime'] = pd.to_datetime(df['index'])
-        else:
-            raise ValueError("❌ No 'datetime' column found.")
+        raise ValueError("❌ Missing 'datetime' column.")
 
     df['datetime'] = pd.to_datetime(df['datetime'])
     if df['datetime'].dt.tz is None:
         df['datetime'] = df['datetime'].dt.tz_localize('UTC')
     df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
 
-    # Final check for required columns
+    # ✅ Validate required columns
     required = ['open', 'high', 'low', 'close']
     for col in required:
         if col not in df.columns:
-            st.write("Available columns:", df.columns.tolist())  # Debug
-            raise ValueError(f"❌ Missing required column: {col}")
+            raise ValueError(f"❌ Missing required column: {col}. Available columns: {df.columns.tolist()}")
 
     return df
-
 
     #return df
 
