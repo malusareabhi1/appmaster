@@ -159,6 +159,7 @@ if raw_df.empty:
 
 df = filter_last_n_days(raw_df, analysis_days)
 option_chain_df = get_nifty_option_chain_simple()
+st.write("✅ Final df columns:", df.columns.tolist())
 
 trade_log_df, breakdown_df = generate_trade_logs(df, offset_points, option_chain_df)
 
