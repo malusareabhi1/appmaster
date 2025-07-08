@@ -3,6 +3,13 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
+import plotly.graph_objects as go
+import numpy as np
+import requests
+#from datetime import datetime
+import datetime
+
+
 # ---------------- Sample Strategy Functions ----------------
 
 def plot_candlestick_chart(df, df_3pm):
