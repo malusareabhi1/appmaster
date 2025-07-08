@@ -32,7 +32,18 @@ def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
         
         df.columns = [col.lower() for col in df.columns]
 
-        df.rename(columns={'datetime': 'datetime'}, inplace=True)
+        #df.rename(columns={'datetime': 'datetime'}, inplace=True)
+        # Try to detect the datetime column name automatically
+        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
+        
+        if not datetime_col:
+            st.error("❌ No datetime column found after reset_index().")
+            st.write("📋 Available columns:", df.columns.tolist())
+            return pd.DataFrame()
+        
+        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+
+        
         df['datetime'] = pd.to_datetime(df['datetime'])
         if df['datetime'].dt.tz is None:
             df['datetime'] = df['datetime'].dt.tz_localize('UTC')
