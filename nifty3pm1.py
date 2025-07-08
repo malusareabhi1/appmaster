@@ -363,81 +363,74 @@ stop_loss_points = st.sidebar.number_input("Stop Loss Points", value=50, step=5)
 target_points = st.sidebar.number_input("Target Points", value=100, step=5)
 
 # Paper Trading Logic
-def run_paper_trading(df, trades_df):
+def run_paper_trading(price_df, breakout_df, breakdown_df):
+    """
+    Simulate paper trades for breakout (CALL) and breakdown (PUT) options.
+
+    Parameters:
+    - price_df: DataFrame with 'datetime', 'open', 'high', 'low', 'close' prices
+    - breakout_df: DataFrame with breakout trades info (CALLS)
+    - breakdown_df: DataFrame with breakdown trades info (PUTS)
+
+    Returns:
+    - DataFrame with simulated trades and their PnL
+    """
+
     trades = []
-    for idx, trade in trades_df.iterrows():
-        trade_date = trade['3PM Date']
-        entry_price = trade['Breakout Entry'] if trade['Type'] == 'CALL' else trade['Breakdown Entry']
-        trade_type = trade['Type']
 
-        # Filter intraday data for the day after trade_date (simulate next day trading)
-        day_data = df[(df['datetime'].dt.date > trade_date) & 
-                      (df['datetime'].dt.date <= trade_date + pd.Timedelta(days=1))]
-        
-        if day_data.empty:
-            continue
+    # Helper function to get exit price for next trading day close
+    def get_exit_price(trade_date):
+        next_day = trade_date + pd.Timedelta(days=1)
+        next_day_data = price_df[price_df['datetime'].dt.date == next_day.date()]
+        if not next_day_data.empty:
+            # Exit at close price of next day
+            return next_day_data.iloc[-1]['close'], next_day_data.iloc[-1]['datetime']
+        else:
+            # If no next day data, exit at last available price
+            last_row = price_df[price_df['datetime'].dt.date == trade_date].iloc[-1]
+            return last_row['close'], last_row['datetime']
 
-        sl = entry_price - stop_loss_points if trade_type == 'CALL' else entry_price + stop_loss_points
-        target = entry_price + target_points if trade_type == 'CALL' else entry_price - target_points
+    # Process breakout (CALL) trades
+    for _, row in breakout_df.iterrows():
+        trade_date = row['3PM Date']
+        entry_price = row['Breakout Entry']
 
-        status = "Open"
-        exit_price = None
-        exit_time = None
-        profit = None
+        exit_price, exit_time = get_exit_price(trade_date)
 
-        # Simulate trade exit by scanning intraday high/low after entry
-        for _, row in day_data.iterrows():
-            high = row['high']
-            low = row['low']
-            current_time = row['datetime']
-
-            if trade_type == 'CALL':
-                # Check stop loss hit first
-                if low <= sl:
-                    exit_price = sl
-                    exit_time = current_time
-                    profit = exit_price - entry_price
-                    status = "SL Hit"
-                    break
-                # Check target hit
-                elif high >= target:
-                    exit_price = target
-                    exit_time = current_time
-                    profit = exit_price - entry_price
-                    status = "Target Hit"
-                    break
-            else:  # PUT trade
-                if high >= sl:
-                    exit_price = sl
-                    exit_time = current_time
-                    profit = entry_price - exit_price
-                    status = "SL Hit"
-                    break
-                elif low <= target:
-                    exit_price = target
-                    exit_time = current_time
-                    profit = entry_price - exit_price
-                    status = "Target Hit"
-                    break
-        
-        # If no SL or target hit, close at last price of day
-        if status == "Open":
-            last_close = day_data.iloc[-1]['close']
-            exit_price = last_close
-            exit_time = day_data.iloc[-1]['datetime']
-            profit = (exit_price - entry_price) if trade_type == 'CALL' else (entry_price - exit_price)
-            status = "Closed EOD"
+        profit = exit_price - entry_price  # Profit for CALL
 
         trades.append({
             '3PM Date': trade_date,
-            'Type': trade_type,
+            'Type': 'CALL',
             'Entry Price': entry_price,
             'Exit Price': exit_price,
             'Exit Time': exit_time,
-            'Status': status,
-            'Profit': round(profit, 2)
+            'Status': 'Closed',
+            'Profit': profit
         })
-    
+
+    # Process breakdown (PUT) trades
+    for _, row in breakdown_df.iterrows():
+        trade_date = row['3PM Date']
+        entry_price = row['Breakdown Entry']
+
+        exit_price, exit_time = get_exit_price(trade_date)
+
+        profit = entry_price - exit_price  # Profit for PUT
+
+        trades.append({
+            '3PM Date': trade_date,
+            'Type': 'PUT',
+            'Entry Price': entry_price,
+            'Exit Price': exit_price,
+            'Exit Time': exit_time,
+            'Status': 'Closed',
+            'Profit': profit
+        })
+
+    if not trades:
+        return pd.DataFrame(columns=['3PM Date', 'Type', 'Entry Price', 'Exit Price', 'Exit Time', 'Status', 'Profit'])
+
     return pd.DataFrame(trades)
 
 
