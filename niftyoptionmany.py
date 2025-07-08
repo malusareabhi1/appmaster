@@ -1,5 +1,7 @@
 import streamlit as st
+import yfinance as yf
 import pandas as pd
+from datetime import datetime, timedelta
 
 # ---------------- Sample Strategy Functions ----------------
 def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
