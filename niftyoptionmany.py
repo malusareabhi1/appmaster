@@ -437,12 +437,12 @@ if strategy == "930 CE/PE Strategy":
         st.error(f"Missing columns: {missing_cols}")
         st.stop()
         #df = run_930_ce_pe_strategy(target, stoploss)
-        paper_trades_df = run_paper_trading(df, trade_log_df, breakdown_df)
+    paper_trades_df = run_paper_trading(df, trade_log_df, breakdown_df)
 
 
-        st.subheader("📋 Paper Trading Results")
-        st.dataframe(paper_trades_df)
-        st.dataframe(df)
+    st.subheader("📋 Paper Trading Results")
+    st.dataframe(paper_trades_df)
+    st.dataframe(df)
 
 elif strategy == "SMA Crossover Strategy":
     st.sidebar.subheader("📊 Parameters")
