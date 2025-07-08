@@ -464,3 +464,6 @@ st.markdown(f"""
 **Total PnL:** ₹{total_profit:.2f}  
 """)
 
+st.write("Paper Trading Data Columns:", paper_trades_df.columns.tolist())
+st.write("Sample Paper Trading Data:", paper_trades_df.head())
+
