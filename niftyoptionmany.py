@@ -154,8 +154,14 @@ def get_nifty_option_chain_simple():
                 'PE_LTP': pe.get('lastPrice'),
                 'PE_IV': pe.get('impliedVolatility')
             })
-        df = pd.DataFrame(rows)
-        return df
+            df = pd.DataFrame(rows)
+                for col in required:
+            if col not in df.columns:
+                raise ValueError(f"❌ Missing required column: {col}. Available columns: {df.columns.tolist()}")
+    
+        return df  # ✅ DO NOT COMMENT THIS LINE
+
+        #return df
     except Exception as e:
         st.error(f"❌ Error fetching option chain: {e}")
         return pd.DataFrame()
