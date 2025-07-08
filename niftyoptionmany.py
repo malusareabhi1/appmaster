@@ -11,6 +11,95 @@ import datetime
 
 
 # ---------------- Sample Strategy Functions ----------------
+def run_sma_crossover_option_strategy(price_df, option_chain_df, target_points=50, sl_pct=5):
+    price_df = price_df.copy()
+    price_df = price_df.sort_values('datetime')
+    price_df['SMA9'] = price_df['close'].rolling(window=9).mean()
+    price_df['SMA21'] = price_df['close'].rolling(window=21).mean()
+
+    trades = []
+    in_position = False
+    entry_row = None
+    option_type = None
+    entry_price = None
+    entry_spot = None
+    target_spot = None
+    stop_loss_price = None
+    multiplier = 0.7  # option price movement w.r.t. spot
+
+    for i in range(1, len(price_df)):
+        row = price_df.iloc[i]
+        prev_row = price_df.iloc[i - 1]
+        time = row['datetime'].time()
+        date = row['datetime'].date()
+
+        # Check crossover conditions
+        if not in_position:
+            # Bullish crossover: Buy CE
+            if prev_row['SMA9'] < prev_row['SMA21'] and row['SMA9'] > row['SMA21']:
+                in_position = True
+                option_type = "CE"
+                entry_row = row
+            # Bearish crossover: Buy PE
+            elif prev_row['SMA9'] > prev_row['SMA21'] and row['SMA9'] < row['SMA21']:
+                in_position = True
+                option_type = "PE"
+                entry_row = row
+
+            if in_position:
+                entry_spot = entry_row['close']
+                strikes = sorted(option_chain_df['strikePrice'].dropna())
+                atm_strike = min(strikes, key=lambda x: abs(x - entry_spot))
+                symbol = f"NIFTY_{option_type}_{atm_strike}"
+                if option_type == "CE":
+                    entry_price = option_chain_df.loc[option_chain_df['strikePrice'] == atm_strike, 'CE_LTP'].values[0]
+                    target_spot = entry_spot + target_points
+                else:
+                    entry_price = option_chain_df.loc[option_chain_df['strikePrice'] == atm_strike, 'PE_LTP'].values[0]
+                    target_spot = entry_spot - target_points
+
+                stop_loss_price = entry_price - (entry_price * sl_pct / 100)
+                entry_time = entry_row['datetime']
+                continue
+
+        # Manage exit
+        if in_position:
+            nifty_price = row['close']
+            current_time = row['datetime']
+            delta = nifty_price - entry_spot if option_type == "CE" else entry_spot - nifty_price
+            simulated_option_price = entry_price + (delta * multiplier)
+
+            if simulated_option_price <= stop_loss_price:
+                exit_reason = "Stop Loss Hit"
+            elif (option_type == "CE" and nifty_price >= target_spot) or (option_type == "PE" and nifty_price <= target_spot):
+                exit_reason = "Target Hit"
+            elif current_time.time() >= pd.to_datetime("15:15").time():
+                exit_reason = "Time Exit"
+            else:
+                continue  # Still in trade
+
+            trades.append({
+                'Date': date,
+                'Entry Spot': entry_spot,
+                'Target Spot': target_spot,
+                'Option': symbol,
+                'Trade Type': option_type,
+                'Entry Price': round(entry_price, 2),
+                'Exit Price': round(simulated_option_price, 2),
+                'Exit Time': current_time,
+                'Exit Reason': exit_reason,
+                'P&L': round(simulated_option_price - entry_price, 2)
+            })
+
+            # Reset state
+            in_position = False
+            entry_row = None
+            entry_price = None
+            option_type = None
+
+    return pd.DataFrame(trades)
+
+
 def run_paper_trading(price_df, breakout_df, breakdown_df, target_points=50, stop_loss_points=30):
     trades = []
 
@@ -650,13 +739,13 @@ if strategy == "930 CE/PE Strategy":
     st.dataframe(paper_trades_df)
     #st.dataframe(df)
 
-elif strategy == "SMA Crossover Strategy":
-    st.sidebar.subheader("📊 Parameters")
-    sma_fast = st.sidebar.number_input("Fast SMA Period", value=5)
-    sma_slow = st.sidebar.number_input("Slow SMA Period", value=20)
+elif strategy == "SMA Crossover Option Strategy":
+    st.sidebar.markdown("**Parameters:**")
+    target_points = st.sidebar.number_input("Target Points", value=50)
+    stop_loss_pct = st.sidebar.number_input("Stop Loss %", value=5)
 
-    st.subheader("🔍 Strategy: SMA Crossover")
-    df = run_sma_crossover_strategy(sma_fast, sma_slow)
-    st.dataframe(df)
+    with st.spinner("Running SMA Crossover Option Strategy..."):
+        trades_df = run_sma_crossover_option_strategy(price_df, option_chain_df, target_points=target_points, sl_pct=stop_loss_pct)
+        st.dataframe(trades_df)
 
 
