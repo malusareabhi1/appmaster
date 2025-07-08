@@ -679,7 +679,22 @@ strategy = st.sidebar.selectbox("Select Strategy", [
     "930 CE/PE Strategy",
     "SMA Crossover Strategy"
 ])
-
+ # ✅ Load price data
+    df = load_nifty_data(period=f"{analysis_days}d")
+    if df.empty:
+        st.stop()
+    
+    # ✅ Rename columns if needed
+    df = df.rename(columns={
+        'open_^nsei': 'open',
+        'high_^nsei': 'high',
+        'low_^nsei': 'low',
+        'close_^nsei': 'close',
+        'volume_^nsei': 'volume'
+    })
+    
+    # ✅ Filter last N days
+    df = filter_last_n_days(df, analysis_days)
 # Strategy-specific inputs and processing
 if strategy == "930 CE/PE Strategy":
     analysis_days=3
@@ -696,22 +711,7 @@ if strategy == "930 CE/PE Strategy":
     
 
     st.subheader("🔍 Strategy: 930 CE/PE Breakout")
-    # ✅ Load price data
-    df = load_nifty_data(period=f"{analysis_days}d")
-    if df.empty:
-        st.stop()
-    
-    # ✅ Rename columns if needed
-    df = df.rename(columns={
-        'open_^nsei': 'open',
-        'high_^nsei': 'high',
-        'low_^nsei': 'low',
-        'close_^nsei': 'close',
-        'volume_^nsei': 'volume'
-    })
-    
-    # ✅ Filter last N days
-    df = filter_last_n_days(df, analysis_days)
+   
     
     # Now df is fully clean
     df_3pm = df[(df['datetime'].dt.hour == 15) & (df['datetime'].dt.minute == 0)].reset_index(drop=True)
