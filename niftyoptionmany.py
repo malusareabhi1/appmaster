@@ -161,42 +161,44 @@ def get_nifty_option_chain_simple():
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
-def load_nifty_data(ticker="^NSEI", interval="15m", period="3d"):
-    try:
-        df = yf.download(ticker, interval=interval, period=period, progress=False)
-        if df.empty:
-            st.error("❌ No data returned from yfinance.")
-            return pd.DataFrame()
+@st.cache_data(ttl=3600)
+def load_nifty_data():
+    df = yf.download("^NSEI", interval="15m", period="10d", progress=False)
+    df.reset_index(inplace=True)
 
-        df.reset_index(inplace=True)
-        #df.columns = [col.lower() for col in df.columns]
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns]
-        
-        df.columns = [col.lower() for col in df.columns]
+    # Standardize column names to lowercase
+    df.columns = [str(col).lower() for col in df.columns]
 
-        #df.rename(columns={'datetime': 'datetime'}, inplace=True)
-        # Try to detect the datetime column name automatically
-        datetime_col = next((col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()), None)
-        
-        if not datetime_col:
-            st.error("❌ No datetime column found after reset_index().")
-            st.write("📋 Available columns:", df.columns.tolist())
-            return pd.DataFrame()
-        
-        df.rename(columns={datetime_col: 'datetime'}, inplace=True)
+    # Rename 'open', 'high', 'low', 'close', 'volume' if needed
+    rename_map = {
+        'open': 'open',
+        'high': 'high',
+        'low': 'low',
+        'close': 'close',
+        'volume': 'volume',
+        'datetime': 'datetime',
+        'date': 'datetime'
+    }
 
-        
-        df['datetime'] = pd.to_datetime(df['datetime'])
-        if df['datetime'].dt.tz is None:
-            df['datetime'] = df['datetime'].dt.tz_localize('UTC')
-        df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
-        df = df[(df['datetime'].dt.time >= pd.to_datetime("09:15").time()) &
-                (df['datetime'].dt.time <= pd.to_datetime("15:30").time())]
-        return df
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
+    # Ensure essential columns exist
+    for std_col in ['open', 'high', 'low', 'close']:
+        if std_col not in df.columns:
+            raise ValueError(f"❌ Missing required column: {std_col}")
+
+    # Fix datetime
+    if 'datetime' not in df.columns:
+        if 'date' in df.columns:
+            df['datetime'] = pd.to_datetime(df['date'])
+        else:
+            raise ValueError("❌ No datetime or date column found.")
+
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    if df['datetime'].dt.tz is None:
+        df['datetime'] = df['datetime'].dt.tz_localize('UTC')
+    df['datetime'] = df['datetime'].dt.tz_convert('Asia/Kolkata')
+
+    return df
+
 
     #return df
 
