@@ -1,34 +1,46 @@
 import streamlit as st
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime
-from nsepython import dividend_calendar  # from nsepython library
 
-# 🛠️ App setup
-st.set_page_config(page_title="Dividend Calendar", layout="wide")
-st.title("📅 NSE Dividend Calendar (Live Data)")
+st.set_page_config(page_title="Live Dividend Calendar", layout="wide")
+st.title("💰 Live NSE Dividend Calendar (Moneycontrol)")
 
-# Sidebar date filter
-st.sidebar.header("Filter by Ex-Date")
+# Fetch data from Moneycontrol
+url = "https://www.moneycontrol.com/stocks/marketinfo/dividends_declared/index.php"
+headers = {"User-Agent": "Mozilla/5.0"}
+response = requests.get(url, headers=headers)
+soup = BeautifulSoup(response.content, "html.parser")
+
+# Parse table
+table = soup.find("table", class_="tbldata14")
+rows = table.find_all("tr")[1:]  # Skip header
+
+data = []
+for row in rows:
+    cols = row.find_all("td")
+    if len(cols) >= 5:
+        data.append({
+            "Company": cols[0].text.strip(),
+            "Symbol": cols[1].text.strip(),
+            "Dividend": cols[2].text.strip(),
+            "Ex-Date": cols[3].text.strip(),
+            "Record Date": cols[4].text.strip(),
+        })
+
+df = pd.DataFrame(data)
+df['Ex-Date'] = pd.to_datetime(df['Ex-Date'], errors='coerce')
+
+# Sidebar filters
+st.sidebar.header("📅 Filter by Ex-Date")
 today = datetime.today().date()
 start_date = st.sidebar.date_input("From", today)
 end_date = st.sidebar.date_input("To", today)
 
-# Fetch and process data
-data = dividend_calendar()  # fetches upcoming/ex-date dividend info
-df = pd.DataFrame(data)
-df['exDate'] = pd.to_datetime(df['exDate'], format="%d-%b-%Y")
-df['amount'] = df['amount'].astype(float)
+# Filter
+mask = (df['Ex-Date'].dt.date >= start_date) & (df['Ex-Date'].dt.date <= end_date)
+filtered_df = df[mask]
 
-# Filter DataFrame
-mask = (df['exDate'].dt.date >= start_date) & (df['exDate'].dt.date <= end_date)
-filtered = df.loc[mask, ['symbol', 'companyName', 'exDate', 'amount']]
-
-# Display
-st.dataframe(filtered.rename(columns={
-    'symbol': 'Symbol',
-    'companyName': 'Company',
-    'exDate': 'Ex‑Date',
-    'amount': 'Dividend (₹)'
-}), use_container_width=True)
-
-st.markdown("💡 *Powered by [`nsepython`](https://pypi.org/project/nsepython)*")
+st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
+st.caption("📌 Source: Moneycontrol.com | Data updated live.")
