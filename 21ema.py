@@ -40,19 +40,24 @@ df.dropna(inplace=True)
 # --- Initialize Signals ---
 df['Signal'] = 0
 
-try:
-    close = df['Close']
-    ema = df['EMA21']
-    
-    # Safely compute buy/sell conditions
-    buy_condition = (close > ema) & (close.shift(1) <= ema.shift(1))
-    sell_condition = (close < ema) & (close.shift(1) >= ema.shift(1))
+# --- Ensure Series and Align ---
+close = df['Close'].copy()
+ema = df['EMA21'].copy()
 
-    df.loc[buy_condition, 'Signal'] = 1
-    df.loc[sell_condition, 'Signal'] = -1
-except Exception as e:
-    st.error(f"⚠️ Error calculating signals: {e}")
-    st.stop()
+# Align both series explicitly
+close, ema = close.align(ema, join="inner")
+
+# Shifted series
+close_prev = close.shift(1)
+ema_prev = ema.shift(1)
+
+# Buy & Sell Conditions
+buy_condition = (close > ema) & (close_prev <= ema_prev)
+sell_condition = (close < ema) & (close_prev >= ema_prev)
+
+df['Signal'] = 0
+df.loc[buy_condition, 'Signal'] = 1
+df.loc[sell_condition, 'Signal'] = -1
 
 # --- Plotting ---
 fig = go.Figure()
