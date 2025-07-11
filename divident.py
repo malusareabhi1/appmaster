@@ -11,36 +11,44 @@ st.title("💰 Live NSE Dividend Calendar (Moneycontrol)")
 url = "https://www.moneycontrol.com/stocks/marketinfo/dividends_declared/index.php"
 headers = {"User-Agent": "Mozilla/5.0"}
 response = requests.get(url, headers=headers)
-soup = BeautifulSoup(response.content, "html.parser")
 
-# Parse table
-table = soup.find("table", class_="tbldata14")
-rows = table.find_all("tr")[1:]  # Skip header
+if response.status_code != 200:
+    st.error("❌ Failed to fetch data from Moneycontrol.")
+else:
+    soup = BeautifulSoup(response.content, "html.parser")
+    table = soup.find("table", class_="tbldata14")
 
-data = []
-for row in rows:
-    cols = row.find_all("td")
-    if len(cols) >= 5:
-        data.append({
-            "Company": cols[0].text.strip(),
-            "Symbol": cols[1].text.strip(),
-            "Dividend": cols[2].text.strip(),
-            "Ex-Date": cols[3].text.strip(),
-            "Record Date": cols[4].text.strip(),
-        })
+    if table is None:
+        st.error("⚠️ Dividend data table not found. Moneycontrol may have changed their website layout.")
+    else:
+        # Parse table rows
+        rows = table.find_all("tr")[1:]  # Skip header
 
-df = pd.DataFrame(data)
-df['Ex-Date'] = pd.to_datetime(df['Ex-Date'], errors='coerce')
+        data = []
+        for row in rows:
+            cols = row.find_all("td")
+            if len(cols) >= 5:
+                data.append({
+                    "Company": cols[0].text.strip(),
+                    "Symbol": cols[1].text.strip(),
+                    "Dividend": cols[2].text.strip(),
+                    "Ex-Date": cols[3].text.strip(),
+                    "Record Date": cols[4].text.strip(),
+                })
 
-# Sidebar filters
-st.sidebar.header("📅 Filter by Ex-Date")
-today = datetime.today().date()
-start_date = st.sidebar.date_input("From", today)
-end_date = st.sidebar.date_input("To", today)
+        # Convert to DataFrame
+        df = pd.DataFrame(data)
+        df['Ex-Date'] = pd.to_datetime(df['Ex-Date'], errors='coerce')
 
-# Filter
-mask = (df['Ex-Date'].dt.date >= start_date) & (df['Ex-Date'].dt.date <= end_date)
-filtered_df = df[mask]
+        # Sidebar filters
+        st.sidebar.header("📅 Filter by Ex-Date")
+        today = datetime.today().date()
+        start_date = st.sidebar.date_input("From", today)
+        end_date = st.sidebar.date_input("To", today)
 
-st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
-st.caption("📌 Source: Moneycontrol.com | Data updated live.")
+        # Filter by date
+        mask = (df['Ex-Date'].dt.date >= start_date) & (df['Ex-Date'].dt.date <= end_date)
+        filtered_df = df[mask]
+
+        st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
+        st.caption("📌 Source: Moneycontrol.com | Data updated live.")
