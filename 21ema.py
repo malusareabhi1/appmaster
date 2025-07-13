@@ -3,47 +3,49 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 
-# --- Streamlit UI ---
+# --- Page Setup ---
 st.set_page_config("📈 21 EMA Strategy", layout="wide")
 st.title("📊 21 EMA Trading Strategy – Intraday & Swing")
 
-st.sidebar.header("🔍 Settings")
-ticker = st.sidebar.text_input("Enter Stock Symbol (e.g. RELIANCE.NS)", value="RELIANCE.NS")
+# --- Sidebar ---
+st.sidebar.header("🔍 Strategy Settings")
+ticker = st.sidebar.text_input("Enter Stock Symbol", value="RELIANCE.NS")
 mode = st.sidebar.selectbox("Select Mode", ["Intraday", "Swing"])
 
 if mode == "Intraday":
-    interval = st.sidebar.selectbox("Select Interval", ["5m", "15m"])
+    interval = st.sidebar.selectbox("Interval", ["5m", "15m"])
     period = st.sidebar.selectbox("Period", ["1d", "5d", "10d", "1mo"])
 else:
     interval = "1d"
     period = st.sidebar.selectbox("Period", ["1mo", "3mo", "6mo", "1y", "5y"])
 
-# --- Load data ---
+# --- Load Data ---
 @st.cache_data
 def load_data(ticker, period, interval):
-    df = yf.download(ticker, period=period, interval=interval, progress=False)
-    return df
+    return yf.download(ticker, period=period, interval=interval, progress=False)
 
 df = load_data(ticker, period, interval)
 
-# --- Check Data ---
-if df.empty:
+# --- Validation ---
+if df.empty or 'Close' not in df.columns:
     st.error("❌ No data found. Check symbol or timeframe.")
     st.stop()
 
-# --- Calculate EMA and Signals ---
+# --- Strategy Calculation ---
 df['EMA21'] = df['Close'].ewm(span=21, adjust=False).mean()
-df['Close_prev'] = df['Close'].shift(1)
-df['EMA21_prev'] = df['EMA21'].shift(1)
+df['Signal'] = 0
 
-def signal(row):
-    if row['Close'] > row['EMA21'] and row['Close_prev'] <= row['EMA21_prev']:
-        return 1  # Buy
-    elif row['Close'] < row['EMA21'] and row['Close_prev'] >= row['EMA21_prev']:
-        return -1  # Sell
-    return 0
+# Use iterrows for safety
+previous_row = None
+for i, row in df.iterrows():
+    if previous_row is not None:
+        if row['Close'] > row['EMA21'] and previous_row['Close'] <= previous_row['EMA21']:
+            df.at[i, 'Signal'] = 1  # Buy
+        elif row['Close'] < row['EMA21'] and previous_row['Close'] >= previous_row['EMA21']:
+            df.at[i, 'Signal'] = -1  # Sell
+    previous_row = row
 
-df['Signal'] = df.apply(signal, axis=1)
+# Drop any NaNs
 df.dropna(inplace=True)
 
 # --- Plotting ---
@@ -58,14 +60,14 @@ fig.add_trace(go.Scatter(x=df.index, y=df['EMA21'], mode='lines', name='EMA21',
                          line=dict(color='orange')))
 
 # Buy markers
-buy = df[df['Signal'] == 1]
-fig.add_trace(go.Scatter(x=buy.index, y=buy['Close'], mode='markers', name='Buy',
-                         marker=dict(color='green', symbol='triangle-up', size=10)))
+buys = df[df['Signal'] == 1]
+fig.add_trace(go.Scatter(x=buys.index, y=buys['Close'], mode='markers',
+                         name='Buy', marker=dict(color='green', size=10, symbol='triangle-up')))
 
 # Sell markers
-sell = df[df['Signal'] == -1]
-fig.add_trace(go.Scatter(x=sell.index, y=sell['Close'], mode='markers', name='Sell',
-                         marker=dict(color='red', symbol='triangle-down', size=10)))
+sells = df[df['Signal'] == -1]
+fig.add_trace(go.Scatter(x=sells.index, y=sells['Close'], mode='markers',
+                         name='Sell', marker=dict(color='red', size=10, symbol='triangle-down')))
 
 fig.update_layout(title=f"{ticker} | {interval} | 21 EMA Strategy",
                   xaxis_title="Time", yaxis_title="Price",
@@ -75,12 +77,13 @@ st.plotly_chart(fig, use_container_width=True)
 
 # --- Signal Table ---
 st.subheader("📋 Signal Log")
-log = df[df['Signal'] != 0][['Close', 'EMA21', 'Signal']].copy()
-log['Signal'] = log['Signal'].map({1: 'Buy', -1: 'Sell'})
-st.dataframe(log)
+signal_df = df[df['Signal'] != 0][['Close', 'EMA21', 'Signal']].copy()
+signal_df['Signal'] = signal_df['Signal'].map({1: 'Buy', -1: 'Sell'})
+st.dataframe(signal_df)
 
-# --- Download Button ---
+# --- Download CSV ---
 st.download_button("📥 Download Signal CSV",
-                   data=log.to_csv().encode(),
+                   data=signal_df.to_csv().encode(),
                    file_name=f"{ticker}_21EMA_Signals.csv",
                    mime="text/csv")
+
