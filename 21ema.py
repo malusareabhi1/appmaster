@@ -3,6 +3,10 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 
+
+
+
+
 # --- Setup ---
 st.set_page_config("📈 21 EMA Strategy", layout="wide")
 st.title("📊 21 EMA Trading Strategy – Intraday & Swing")
