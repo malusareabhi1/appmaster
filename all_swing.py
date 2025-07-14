@@ -627,9 +627,21 @@ if st.button("🔍 Run Scan"):
 
         # ------------- MACD Divergence Detection -------------
             if scan_macd_divergence:
-                recent = df.dropna().iloc[-30:]
+                recent = df.dropna(subset=["MACD"]).iloc[-30:]
+
+                if len(recent) < 10:
+                    raise ValueError("Not enough MACD data")
+                
                 closes = recent["Close"].values
                 macds = recent["MACD"].values
+                #closes = recent["Close"].values
+                #macds = recent["MACD"].values
+                #df["MACD"] = MACD(close=df["Close"]).macd()
+                macd_calc = MACD(close=df["Close"], window_fast=12, window_slow=26, window_sign=9)
+                df["MACD"] = macd_calc.macd()
+                df = df.dropna(subset=["EMA20", "EMA50", "RSI", "MACD"])
+
+
 
                 def find_extreme(values, mode="min"):
                     idx = None
