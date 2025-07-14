@@ -56,7 +56,9 @@ if st.button("🔍 Run Scan"):
 
             df["EMA20"] = df["Close"].ewm(span=20, adjust=False).mean()
             df["EMA50"] = df["Close"].ewm(span=50, adjust=False).mean()
-            df["RSI"] = RSIIndicator(df["Close"], window=14).rsi()
+            #df["RSI"] = RSIIndicator(df["Close"], window=14).rsi()
+            df["RSI"] = RSIIndicator(close=df["Close"].squeeze(), window=14).rsi()
+
 
             latest = df.iloc[-1]
             prev = df.iloc[-2]
