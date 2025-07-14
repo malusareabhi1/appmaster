@@ -11,7 +11,7 @@ lookback = st.sidebar.slider("Lookback Candles", 2, 10, 3)
 vol_multiplier = st.sidebar.slider("Volume Multiplier", 1.0, 5.0, 1.5)
 
 stocks = ['RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'SBIN.NS', 'ICICIBANK.NS']
-selected = st.multiselect("Select Stocks to Scan", stocks, default=stocks)
+selected = st.multiselect("Select Stocks", stocks, default=stocks)
 
 start = datetime.today() - timedelta(days=90)
 end = datetime.today()
@@ -23,26 +23,28 @@ if st.button("🔍 Scan for Breakouts"):
         try:
             df = yf.download(symbol, start=start, end=end, interval='1d', progress=False)
             if df.empty or len(df) < lookback + 2:
+                st.warning(f"{symbol}: Not enough data.")
                 continue
 
-            # Rolling calculations
-            df['Prev_High'] = df['High'].shift(1).rolling(lookback).max()
-            df['Avg_Volume'] = df['Volume'].shift(1).rolling(lookback).mean()
+            # Calculate previous high and avg volume
+            df['Prev_High'] = df['High'].shift(1).rolling(window=lookback).max()
+            df['Avg_Volume'] = df['Volume'].shift(1).rolling(window=lookback).mean()
 
-            # Drop rows with NaNs
-            df = df.dropna(subset=["Close", "Prev_High", "Volume", "Avg_Volume"])
+            # Drop all rows with NaNs in any comparison column
+            df = df.dropna(subset=['Close', 'Prev_High', 'Volume', 'Avg_Volume'])
 
-            # Align operands before comparison
-            close_aligned, high_aligned = df["Close"].align(df["Prev_High"], join="inner")
-            vol_aligned, avg_vol_aligned = df["Volume"].align(df["Avg_Volume"], join="inner")
+            # Ensure last row is valid
+            if df.empty:
+                st.warning(f"{symbol}: Data not ready after cleaning.")
+                continue
 
-            # Perform aligned comparisons
-            breakout_condition = (close_aligned > high_aligned) & (vol_aligned > avg_vol_aligned * vol_multiplier)
-            breakout_df = df.loc[breakout_condition.index].copy()
-            breakout_df = breakout_df[breakout_condition]
+            latest = df.iloc[-1]
 
-            if not breakout_df.empty:
-                latest = breakout_df.iloc[-1]
+            # Perform scalar (safe) comparison
+            if (
+                latest['Close'] > latest['Prev_High'] and
+                latest['Volume'] > latest['Avg_Volume'] * vol_multiplier
+            ):
                 results.append({
                     "Stock": symbol,
                     "Date": latest.name.date(),
