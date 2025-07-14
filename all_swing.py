@@ -538,6 +538,8 @@ start_date = end_date - timedelta(days=200)
 
 scan_crossover = st.checkbox("Scan for Golden/Death Cross", value=True)
 scan_pullback = st.checkbox("Scan for Pullback to EMA20 (Buy the Dip)", value=True)
+scan_macd_divergence = st.checkbox("Scan for MACD Divergence (Bullish/Bearish)", value=True)
+
 
 # ------------------------------------
 # Main Scan Logic
@@ -622,6 +624,56 @@ if st.button("🔍 Run Scan"):
                 if in_uptrend and near_ema20 and rsi_ok and (is_bullish_engulfing or is_hammer):
                     pullback_signals.append({"Stock": stock, "Signal": "🟢 Pullback Buy"})
 
+        # ------------- MACD Divergence Detection -------------
+            if scan_macd_divergence:
+                recent = df.dropna().iloc[-30:]
+                closes = recent["Close"].values
+                macds = recent["MACD"].values
+
+                def find_extreme(values, mode="min"):
+                    idx = None
+                    val = None
+                    for i in range(1, len(values)-1):
+                        if mode == "min" and values[i] < values[i-1] and values[i] < values[i+1]:
+                            if idx is None or values[i] < val:
+                                idx = i
+                                val = values[i]
+                        elif mode == "max" and values[i] > values[i-1] and values[i] > values[i+1]:
+                            if idx is None or values[i] > val:
+                                idx = i
+                                val = values[i]
+                    return idx, val
+
+                # Bullish divergence
+                low1_idx, low1_price = find_extreme(closes, "min")
+                low2_idx, low2_price = find_extreme(closes[::-1], "min")
+                low2_idx = len(closes) - 1 - low2_idx if low2_idx is not None else None
+
+                if low1_idx is not None and low2_idx is not None and low2_idx > low1_idx:
+                    price_diff = closes[low2_idx] - closes[low1_idx]
+                    macd_diff = macds[low2_idx] - macds[low1_idx]
+                    if price_diff < 0 and macd_diff > 0:
+                        signals.append({"Stock": stock, "Signal": "📉 MACD Bullish Divergence"})
+
+                # Bearish divergence
+                high1_idx, high1_price = find_extreme(closes, "max")
+                high2_idx, high2_price = find_extreme(closes[::-1], "max")
+                high2_idx = len(closes) - 1 - high2_idx if high2_idx is not None else None
+
+                if high1_idx is not None and high2_idx is not None and high2_idx > high1_idx:
+                    price_diff = closes[high2_idx] - closes[high1_idx]
+                    macd_diff = macds[high2_idx] - macds[high1_idx]
+                    if price_diff > 0 and macd_diff < 0:
+                        signals.append({"Stock": stock, "Signal": "📈 MACD Bearish Divergence"})
+
+
+
+
+
+        
+
+        
+
 
 
         except Exception as e:
@@ -638,6 +690,13 @@ if st.button("🔍 Run Scan"):
             st.dataframe(pd.DataFrame(signals))
         else:
             st.info("No EMA crossover signals found.")
+
+    if scan_crossover or scan_macd_divergence:
+        st.subheader("📊 EMA & MACD Signal Results")
+        if signals:
+            st.dataframe(pd.DataFrame(signals))
+        else:
+            st.info("No EMA or MACD signals found.")
 
     if scan_pullback:
         st.subheader("📉 Pullback to 20 EMA (Buy the Dip)")
