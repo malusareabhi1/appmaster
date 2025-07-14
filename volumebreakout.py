@@ -13,7 +13,7 @@ vol_multiplier = st.sidebar.slider("Volume Multiplier", 1.0, 5.0, 1.5)
 stocks = ['RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'SBIN.NS', 'ICICIBANK.NS']
 selected = st.multiselect("Select Stocks to Scan", stocks, default=stocks)
 
-start = datetime.today() - timedelta(days=60)
+start = datetime.today() - timedelta(days=90)
 end = datetime.today()
 
 results = []
@@ -25,15 +25,24 @@ if st.button("🔍 Scan for Breakouts"):
             if df.empty or len(df) < lookback + 2:
                 continue
 
+            # Rolling calculations
             df['Prev_High'] = df['High'].shift(1).rolling(lookback).max()
             df['Avg_Volume'] = df['Volume'].shift(1).rolling(lookback).mean()
-            df.dropna(inplace=True)  # Ensure aligned indices for comparison
 
-            # Compare safely as all Series now have equal index
-            df['Breakout'] = (df['Close'] > df['Prev_High']) & (df['Volume'] > df['Avg_Volume'] * vol_multiplier)
+            # Drop rows with NaNs
+            df = df.dropna(subset=["Close", "Prev_High", "Volume", "Avg_Volume"])
 
-            if df['Breakout'].iloc[-1]:  # Only latest candle breakout
-                latest = df.iloc[-1]
+            # Align operands before comparison
+            close_aligned, high_aligned = df["Close"].align(df["Prev_High"], join="inner")
+            vol_aligned, avg_vol_aligned = df["Volume"].align(df["Avg_Volume"], join="inner")
+
+            # Perform aligned comparisons
+            breakout_condition = (close_aligned > high_aligned) & (vol_aligned > avg_vol_aligned * vol_multiplier)
+            breakout_df = df.loc[breakout_condition.index].copy()
+            breakout_df = breakout_df[breakout_condition]
+
+            if not breakout_df.empty:
+                latest = breakout_df.iloc[-1]
                 results.append({
                     "Stock": symbol,
                     "Date": latest.name.date(),
