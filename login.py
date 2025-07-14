@@ -15,7 +15,7 @@ def login_form():
     st.title("🔐 Login to the App")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-   if st.button("Login"):
+    if st.button("Login"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.session_state.logged_in = True
             st.session_state.username = username
