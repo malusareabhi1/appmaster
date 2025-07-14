@@ -24,7 +24,7 @@ st.markdown(bollinger_md)
 
 # Use your nifty50_stocks list here, or customize
 
- nifty50_stocks = [
+nifty50_stocks = [
     '360ONE.NS',
     '3MINDIA.NS',
     'ABB.NS',
