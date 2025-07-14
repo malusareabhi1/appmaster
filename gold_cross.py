@@ -37,7 +37,7 @@ for stock in nifty50_stocks:
         latest = df.iloc[-1]
         prev = df.iloc[-2]
 
-        if prev["EMA20"] < prev["EMA50"] and latest["EMA20"] > latest["EMA50"]:
+        #if prev["EMA20"] < prev["EMA50"] and latest["EMA20"] > latest["EMA50"]:
         print(type(prev["EMA20"]), type(prev["EMA50"]))  # should be float
         print(prev["EMA20"] < prev["EMA50"])             # should be True/False
 
