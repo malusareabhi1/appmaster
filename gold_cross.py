@@ -1,62 +1,45 @@
 import yfinance as yf
 import pandas as pd
-import streamlit as st
 from datetime import datetime, timedelta
 
-st.title("📈 20/50 EMA Crossover Scanner")
+stocks = ["RELIANCE.NS"]  # test one first
 
-# List of NIFTY 50 stocks (can be customized)
-nifty50_stocks = [
-    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-    "KOTAKBANK.NS", "LT.NS", "SBIN.NS", "HINDUNILVR.NS", "ITC.NS",
-    "AXISBANK.NS", "ASIANPAINT.NS", "WIPRO.NS", "MARUTI.NS", "BAJFINANCE.NS"
-]
-
-# Date range
 end_date = datetime.today()
 start_date = end_date - timedelta(days=200)
 
-# Result list
 signals = []
 
-st.write("🔍 Scanning for EMA 20/50 crossover...")
-
-for stock in nifty50_stocks:
+for stock in stocks:
     try:
         df = yf.download(stock, start=start_date, end=end_date)
+
+        print(stock, df.shape)
+        print("Index unique?", df.index.is_unique)
+
         df["EMA20"] = df["Close"].ewm(span=20, adjust=False).mean()
         df["EMA50"] = df["Close"].ewm(span=50, adjust=False).mean()
 
-        
-
-
-        # Check for crossover in last 2 days
-        if df.shape[0] < 2:
+        if len(df) < 2:
             continue
 
-        latest = df.iloc[-1]
         prev = df.iloc[-2]
+        latest = df.iloc[-1]
 
-        #if prev["EMA20"] < prev["EMA50"] and latest["EMA20"] > latest["EMA50"]:
-        print(type(prev["EMA20"]), type(prev["EMA50"]))  # should be float
-        print(prev["EMA20"] < prev["EMA50"])             # should be True/False
+        # Extract scalar values safely
+        prev_ema20 = prev["EMA20"].item() if hasattr(prev["EMA20"], 'item') else prev["EMA20"]
+        prev_ema50 = prev["EMA50"].item() if hasattr(prev["EMA50"], 'item') else prev["EMA50"]
+        latest_ema20 = latest["EMA20"].item() if hasattr(latest["EMA20"], 'item') else latest["EMA20"]
+        latest_ema50 = latest["EMA50"].item() if hasattr(latest["EMA50"], 'item') else latest["EMA50"]
 
+        print(f"{stock} prev EMA20: {prev_ema20}, EMA50: {prev_ema50}")
+        print(f"{stock} latest EMA20: {latest_ema20}, EMA50: {latest_ema50}")
 
-        # Golden Cross
-        if prev["EMA20"] < prev["EMA50"] and latest["EMA20"] > latest["EMA50"]:
+        if prev_ema20 < prev_ema50 and latest_ema20 > latest_ema50:
             signals.append({"Stock": stock, "Signal": "📈 Golden Cross"})
-
-        # Death Cross
-        elif prev["EMA20"] > prev["EMA50"] and latest["EMA20"] < latest["EMA50"]:
+        elif prev_ema20 > prev_ema50 and latest_ema20 < latest_ema50:
             signals.append({"Stock": stock, "Signal": "📉 Death Cross"})
 
     except Exception as e:
-        st.error(f"Error for {stock}: {e}")
+        print(f"Error for {stock}: {e}")
 
-# Show results
-if signals:
-    result_df = pd.DataFrame(signals)
-    st.success(f"✅ {len(result_df)} stocks found with crossover")
-    st.dataframe(result_df)
-else:
-    st.warning("No crossover signals found today.")
+print("Signals:", signals)
