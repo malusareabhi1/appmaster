@@ -7,7 +7,7 @@ st.title("📈 20/50 EMA Crossover Scanner")
 
 # List of some NIFTY 50 stocks (customize as you want)
 
- nifty50_stocks = [
+nifty50_stocks = [
     '360ONE.NS',
     '3MINDIA.NS',
     'ABB.NS',
