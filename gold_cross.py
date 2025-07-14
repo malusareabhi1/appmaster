@@ -27,8 +27,7 @@ for stock in nifty50_stocks:
         df["EMA20"] = df["Close"].ewm(span=20, adjust=False).mean()
         df["EMA50"] = df["Close"].ewm(span=50, adjust=False).mean()
 
-        print(type(prev["EMA20"]), type(prev["EMA50"]))  # should be float
-        print(prev["EMA20"] < prev["EMA50"])             # should be True/False
+        
 
 
         # Check for crossover in last 2 days
@@ -37,6 +36,11 @@ for stock in nifty50_stocks:
 
         latest = df.iloc[-1]
         prev = df.iloc[-2]
+
+        if prev["EMA20"] < prev["EMA50"] and latest["EMA20"] > latest["EMA50"]:
+        print(type(prev["EMA20"]), type(prev["EMA50"]))  # should be float
+        print(prev["EMA20"] < prev["EMA50"])             # should be True/False
+
 
         # Golden Cross
         if prev["EMA20"] < prev["EMA50"] and latest["EMA20"] > latest["EMA50"]:
