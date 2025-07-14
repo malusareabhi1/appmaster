@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
 from ta.momentum import RSIIndicator
+from ta.trend import MACD
 
 # ------------------------------------
 # Page Title and Strategy Explanation
