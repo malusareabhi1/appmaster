@@ -4,6 +4,55 @@ import streamlit as st
 from datetime import datetime, timedelta
 
 st.title("📈 20/50 EMA Crossover Scanner")
+crosses_md = """
+# Golden Cross & Death Cross 📈📉
+
+## Golden Cross 📈
+The **Golden Cross** is a bullish technical indicator that occurs when a **short-term moving average** crosses **above** a **long-term moving average**.  
+This crossover signals a potential shift to an upward trend and is often used as a buy signal.
+
+**Common Setup:**
+- Short-term MA: 20-day or 50-day EMA
+- Long-term MA: 50-day or 200-day EMA
+
+**Meaning:**  
+- Indicates growing buying momentum and possible sustained price increase.  
+- Traders often consider this a signal to enter or add to long positions.
+
+---
+
+## Death Cross 📉
+The **Death Cross** is a bearish technical indicator that occurs when a **short-term moving average** crosses **below** a **long-term moving average**.  
+This crossover signals a potential shift to a downward trend and is often used as a sell signal.
+
+**Common Setup:**
+- Short-term MA: 20-day or 50-day EMA
+- Long-term MA: 50-day or 200-day EMA
+
+**Meaning:**  
+- Indicates growing selling pressure and potential further declines.  
+- Traders often consider this a signal to exit or reduce long positions.
+
+---
+
+**Example Table:**
+
+| Date       | EMA 20 | EMA 50 | Signal        |
+|------------|--------|--------|---------------|
+| 2025-07-10 | 150.2  | 151.0  | No Cross      |
+| 2025-07-11 | 151.5  | 150.9  | **Golden Cross** |
+| 2025-08-01 | 148.0  | 149.5  | **Death Cross**  |
+
+---
+
+**Summary:**  
+- **Golden Cross:** Bullish, consider buying.  
+- **Death Cross:** Bearish, consider selling or caution.
+"""
+
+# Usage example:
+# st.markdown(crosses_md)
+
 
 # List of some NIFTY 50 stocks (customize as you want)
 
