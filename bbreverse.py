@@ -557,6 +557,12 @@ if st.button("Run Bollinger Band Reversal Scan"):
             df['UpperBand'] = df['SMA20'] + (2 * df['STD20'])
             df['LowerBand'] = df['SMA20'] - (2 * df['STD20'])
 
+            # Ensure required columns are available after calculation
+            required_cols = ['SMA20', 'STD20', 'UpperBand', 'LowerBand']
+            if not all(col in df.columns for col in required_cols):
+                st.warning(f"{stock}: Missing required Bollinger columns.")
+                continue
+
              # Ensure Bollinger Bands are available
             if df[['SMA20', 'STD20', 'UpperBand', 'LowerBand']].isnull().any().any():
                 df.dropna(subset=['SMA20', 'STD20', 'UpperBand', 'LowerBand'], inplace=True)
