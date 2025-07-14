@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import io
 
 st.title("📋 Fetch & Display NIFTY 200 Stocks List")
 
@@ -13,11 +14,11 @@ headers = {
 if st.button("Fetch NIFTY 200 List from NSE"):
     try:
         response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raise error if bad response
+        response.raise_for_status()
 
-        df = pd.read_csv(pd.compat.StringIO(response.text))
+        # Use io.StringIO here
+        df = pd.read_csv(io.StringIO(response.text))
 
-        # Extract symbols
         symbols = df['Symbol'].tolist()
         nifty200_stocks = [s + ".NS" for s in symbols]
 
