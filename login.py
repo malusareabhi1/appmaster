@@ -19,6 +19,15 @@ def login_form():
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.session_state.logged_in = True
             st.session_state.username = username
+            st.success("Login successful! Redirecting...")
+            # HTML Redirect
+            redirect_url = "https://projectalgo.streamlit.app/"
+            st.markdown(f"""
+                <meta http-equiv="refresh" content="1; url={redirect_url}">
+                <p>If you are not redirected, <a href="{redirect_url}" target="_blank">click here</a>.</p>
+                """, unsafe_allow_html=True)
+            
+            
             st.stop()  # Better than rerun after login to avoid rerun issues
         else:
             st.error("Invalid username or password")
