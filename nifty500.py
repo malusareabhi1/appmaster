@@ -1,33 +1,37 @@
+import streamlit as st
 import requests
 import pandas as pd
 
-# NSE URL for NIFTY 200 CSV (may change; this is an example)
+st.title("📋 Fetch & Display NIFTY 200 Stocks List")
+
 url = "https://www1.nseindia.com/content/indices/ind_nifty200list.csv"
 
-# NSE blocks simple requests, so set headers to mimic a browser
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
 }
 
-# Fetch CSV
-response = requests.get(url, headers=headers)
+if st.button("Fetch NIFTY 200 List from NSE"):
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Raise error if bad response
 
-# Save CSV temporarily
-csv_path = "nifty200.csv"
-with open(csv_path, "wb") as f:
-    f.write(response.content)
+        df = pd.read_csv(pd.compat.StringIO(response.text))
 
-# Read CSV using pandas
-df = pd.read_csv(csv_path)
+        # Extract symbols
+        symbols = df['Symbol'].tolist()
+        nifty200_stocks = [s + ".NS" for s in symbols]
 
-# Assuming the column with symbols is named 'Symbol' (confirm by inspecting CSV)
-symbols = df['Symbol'].tolist()
+        st.success(f"Fetched {len(nifty200_stocks)} stocks!")
 
-# Add '.NS' suffix for yfinance
-nifty200_stocks = [symbol + ".NS" for symbol in symbols]
+        st.write("Sample symbols:")
+        st.write(nifty200_stocks[:20])
 
-# Print Python list format
-print("nifty200_stocks = [")
-for sym in nifty200_stocks:
-    print(f'    "{sym}",')
-print("]")
+        st.download_button(
+            label="Download full list as CSV",
+            data="\n".join(nifty200_stocks),
+            file_name="nifty200_stocks.txt",
+            mime="text/plain"
+        )
+
+    except Exception as e:
+        st.error(f"Failed to fetch data: {e}")
