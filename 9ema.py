@@ -22,9 +22,12 @@ def load_data(ticker, interval, start, end):
         st.warning("No data found. Try a different symbol or date.")
         return pd.DataFrame()
     df.dropna(inplace=True)
-    df["9EMA"] = ta.trend.ema_indicator(df["Close"], window=9)
-    df["VWAP"] = ta.volume.volume_weighted_average_price(df["High"], df["Low"], df["Close"], df["Volume"])
-    df["RSI"] = ta.momentum.RSIIndicator(df["Close"], window=14).rsi()
+
+    # Technical indicators
+    df["9EMA"] = ta.trend.EMAIndicator(close=df["Close"], window=9).ema_indicator()
+    vwap = ta.volume.VolumeWeightedAveragePrice(high=df["High"], low=df["Low"], close=df["Close"], volume=df["Volume"])
+    df["VWAP"] = vwap.vwap()
+    df["RSI"] = ta.momentum.RSIIndicator(close=df["Close"], window=14).rsi()
     return df
 
 # ------------------- Strategy Logic --------------------
