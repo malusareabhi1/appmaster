@@ -557,6 +557,8 @@ if st.button("Run Bollinger Band Reversal Scan"):
             df['UpperBand'] = df['SMA20'] + (2 * df['STD20'])
             df['LowerBand'] = df['SMA20'] - (2 * df['STD20'])
 
+            df = df.dropna(subset=['SMA20', 'STD20', 'UpperBand', 'LowerBand'])
+
             # Look at last two closes to detect reversal
             prev = df.iloc[-2]
             latest = df.iloc[-1]
