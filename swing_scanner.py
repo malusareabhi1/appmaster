@@ -60,9 +60,7 @@ for stock in tickers:
 
     last = df.iloc[-1]
     prev = df.iloc[-2]
-    prev = df.iloc[-2]
-    last = df.iloc[-1]
-
+   
     # ========== Strategy Checks ==========
 
     if strategy == "EMA Crossover (9/21)":
