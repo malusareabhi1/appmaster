@@ -64,7 +64,8 @@ for stock in tickers:
     # ========== Strategy Checks ==========
 
     if strategy == "EMA Crossover (9/21)":
-        if prev["EMA9"] < prev["EMA21"] and last["EMA9"] > last["EMA21"]:
+        #if prev["EMA9"] < prev["EMA21"] and last["EMA9"] > last["EMA21"]:
+        if float(prev["EMA9"]) < float(prev["EMA21"]) and float(last["EMA9"]) > float(last["EMA21"]):   # Your logic here    
             signals.append((stock, "🟢 EMA Bullish Crossover"))
 
     elif strategy == "Pullback to EMA20":
