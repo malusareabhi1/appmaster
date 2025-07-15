@@ -49,7 +49,10 @@ for stock in tickers:
     df["EMA50"] = EMAIndicator(close=close_series, window=50).ema_indicator()
     df["RSI"] = RSIIndicator(close=close_series).rsi()
 
-    bb = BollingerBands(df["Close"])
+    #bb = BollingerBands(df["Close"])
+    close_series = df["Close"].squeeze()  # OR use df["Close"] if it's already a Series
+    bb = BollingerBands(close=close_series)
+
     df["BB_Width"] = bb.bollinger_hband() - bb.bollinger_lband()
     df["BB_Upper"] = bb.bollinger_hband()
     df["BB_Lower"] = bb.bollinger_lband()
