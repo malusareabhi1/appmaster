@@ -42,11 +42,13 @@ for stock in tickers:
     if df.empty or len(df) < 30:
         continue
 
-    df["EMA9"] = EMAIndicator(df["Close"], window=9).ema_indicator()
-    df["EMA21"] = EMAIndicator(df["Close"], window=21).ema_indicator()
-    df["EMA20"] = EMAIndicator(df["Close"], window=20).ema_indicator()
-    df["EMA50"] = EMAIndicator(df["Close"], window=50).ema_indicator()
-    df["RSI"] = RSIIndicator(df["Close"]).rsi()
+    close_series = df["Close"].squeeze()
+    df["EMA9"] = EMAIndicator(close=close_series, window=9).ema_indicator()
+    df["EMA21"] = EMAIndicator(close=close_series, window=21).ema_indicator()
+    df["EMA20"] = EMAIndicator(close=close_series, window=20).ema_indicator()
+    df["EMA50"] = EMAIndicator(close=close_series, window=50).ema_indicator()
+    df["RSI"] = RSIIndicator(close=close_series).rsi()
+
     bb = BollingerBands(df["Close"])
     df["BB_Width"] = bb.bollinger_hband() - bb.bollinger_lband()
     df["BB_Upper"] = bb.bollinger_hband()
