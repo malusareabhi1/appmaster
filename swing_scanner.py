@@ -72,7 +72,10 @@ for stock in tickers:
         price = last["Close"]
         near_ema20 = abs(price - last["EMA20"]) / price < 0.01
         uptrend = last["EMA20"] > last["EMA50"]
-        is_hammer = last["Close"] > last["Open"] and (last["Open"] - last["Low"]) > 2 * (last["Close"] - last["Open"])
+        last = df.iloc[-1]  # single row, correct
+        is_hammer = (float(last["Close"]) > float(last["Open"])) and \
+            ((float(last["Open"]) - float(last["Low"])) > 2 * (float(last["Close"]) - float(last["Open"])))
+
         if near_ema20 and uptrend and last["RSI"] > 40 and is_hammer:
             signals.append((stock, "🟢 Pullback Buy"))
 
