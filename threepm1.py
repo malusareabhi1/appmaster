@@ -48,8 +48,15 @@ if candle_3pm.empty:
     st.error("No 3:00 PM candle found for last trading day")
     st.stop()
 
-ref_high = candle_3pm['High'].values[0]
-ref_low = candle_3pm['Low'].values[0]
+if len(candle_3pm) == 0:
+    st.error("No 3:00 PM candle found for last trading day.")
+    st.stop()
+elif len(candle_3pm) > 1:
+    st.warning("More than one 3:00 PM candle found, taking the first one.")
+
+ref_high = float(candle_3pm['High'].iloc[0])
+ref_low = float(candle_3pm['Low'].iloc[0])
+
 
 st.write(f"Reference candle on {last_trading_date} 3:00 PM — High: {ref_high}, Low: {ref_low}")
 
