@@ -3,102 +3,92 @@ import yfinance as yf
 import pandas as pd
 import datetime
 
-st.title("NIFTY Option Trading Strategy (Live Data)")
+st.title("NIFTY Option Trading Strategy (Last Day 3PM Candle Breakout)")
 
-# User inputs on UI
-trade_date = st.date_input("Select trade date", datetime.datetime.now().date())
+# User selects the trading date
+trade_date = st.date_input("Select trade date", datetime.date.today())
 
-# Ticker symbol for NIFTY on Yahoo Finance
-# "^NSEI" is commonly used for Nifty 50 index
-ticker = "^NSEI"
+ticker = "^NSEI"  # Nifty index symbol on Yahoo Finance
 
-# Fetch last 2 trading days of data at 15-min interval
-# We fetch extra day so we can get prev day's 3:00 PM candle
-
+# Download last 5 days 15-min data (more robust for weekends/holidays)
 data = yf.download(
     tickers=ticker,
-    period="5d",             # last 5 days just to be safe
+    period="5d",
     interval="15m",
-    progress=False,
+    progress=False
 )
 
-data.reset_index(inplace=True)
+# Reset index and rename
+data = data.reset_index()
+data = data.rename(columns={"Datetime": "datetime"})
 
-# Convert to india timezone (if required)
-#data['Datetime'] = data['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-# Convert to india timezone ONLY IF not already tz-aware
-if data['Datetime'].dt.tz is None:  # tz-naive
-    data['Datetime'] = data['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
-else:  # tz-aware
-    data['Datetime'] = data['Datetime'].dt.tz_convert('Asia/Kolkata')
+# Convert to India time if not already tz-aware
+if data["datetime"].dt.tz is None:
+    data["datetime"] = data["datetime"].dt.tz_localize("UTC").dt.tz_convert("Asia/Kolkata")
+else:
+    data["datetime"] = data["datetime"].dt.tz_convert("Asia/Kolkata")
 
-# Extract last trading day for strategy candle
-last_trading_date = trade_date - datetime.timedelta(days=1)
-
-last_day_data = data[data['Datetime'].dt.date == last_trading_date]
-
-if last_day_data.empty:
-    st.error(f"No data available for previous trading day: {last_trading_date}")
-    st.stop()
-
-# Find the 3:00 PM candle of last trading day
-candle_3pm = last_day_data[last_day_data['Datetime'].dt.time == datetime.time(15, 0)]
+# Find previous trading day with at least one 3:00 PM candle
+curr = trade_date - datetime.timedelta(days=1)
+looked_back = 0
+while looked_back < 7:
+    last_day_data = data[data['datetime'].dt.date == curr]
+    # Check if 3:00 PM candle exists
+    candle_3pm = last_day_data[last_day_data['datetime'].dt.time == datetime.time(15, 0)]
+    if not candle_3pm.empty:
+        break
+    curr -= datetime.timedelta(days=1)
+    looked_back += 1
 
 if candle_3pm.empty:
-    st.error("No 3:00 PM candle found for last trading day")
+    st.error("No 3:00 PM candle found for any recent trading day!")
     st.stop()
 
-if len(candle_3pm) == 0:
-    st.error("No 3:00 PM candle found for last trading day.")
-    st.stop()
-elif len(candle_3pm) > 1:
-    st.warning("More than one 3:00 PM candle found, taking the first one.")
-
+# Extract previous day's 3:00 PM high and low as FLOATS
 ref_high = float(candle_3pm['High'].iloc[0])
 ref_low = float(candle_3pm['Low'].iloc[0])
+ref_date = curr
 
+st.info(f"Reference date: {ref_date} | 3:00 PM High: {ref_high:.2f} Low: {ref_low:.2f}")
 
-st.write(f"Reference candle on {last_trading_date} 3:00 PM — High: {ref_high}, Low: {ref_low}")
+# Get current day after 9:30 AM
+today_data = data[data['datetime'].dt.date == trade_date]
+today_data = today_data[today_data['datetime'].dt.time >= datetime.time(9, 30)].reset_index(drop=True)
 
-# Get today's data after 9:30 AM
-today_data = data[data['Datetime'].dt.date == trade_date]
-today_after_930 = today_data[today_data['Datetime'].dt.time >= datetime.time(9, 30)].reset_index(drop=True)
-
-if today_after_930.empty:
-    st.warning("No data available for today after 9:30 AM yet.")
+if today_data.empty:
+    st.warning("No data for selected trade date after 9:30 AM yet.")
     st.stop()
 
+# Strategy logic
 signal = None
-trigger_time = None
-trigger_price = None
+signal_time = None
+signal_price = None
 
-# Check signals in chronological order
-for idx, row in today_after_930.iterrows():
-    # Check breakout above last day 3pm high
-    if row['High'] > ref_high:
+for i, row in today_data.iterrows():
+    high = float(row['High'])
+    low = float(row['Low'])
+    if high > ref_high:
         signal = "CALL (Buy CE)"
-        trigger_time = row['Datetime']
-        trigger_price = row['Close']
+        signal_time = row['datetime']
+        signal_price = row['Close']
         break
-    # Check breakdown below last day 3pm low
-    elif row['Low'] < ref_low:
+    elif low < ref_low:
         signal = "PUT (Buy PE)"
-        trigger_time = row['Datetime']
-        trigger_price = row['Close']
+        signal_time = row['datetime']
+        signal_price = row['Close']
         break
 
 if signal:
-    st.success(
-        f"Trade Signal: {signal}\n"
-        f"Triggered at: {trigger_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
-        f"Price: {trigger_price:.2f}"
-    )
+    st.success(f"Trade Signal: **{signal}**")
+    st.write(f"Triggered at: {signal_time.strftime('%Y-%m-%d %H:%M')}")
+    st.write(f"Price: {signal_price:.2f}")
 else:
-    st.info("No breakout/breakdown signal detected after 9:30 AM today.")
+    st.info("No breakout/breakdown after 9:30 AM on selected date.")
 
-# Show data tables (optional)
-with st.expander("View Today's Data After 9:30 AM"):
-    st.write(today_after_930[['Datetime', 'Open', 'High', 'Low', 'Close']].tail(10))
+# Optional: Show table of today's data after 9:30 AM
+with st.expander("See today's (after 9:30AM) data"):
+    st.dataframe(today_data[['datetime', 'Open', 'High', 'Low', 'Close']].tail(10))
 
-with st.expander("View Last Trading Day Data"):
-    st.write(last_day_data[['Datetime', 'Open', 'High', 'Low', 'Close']].tail(10))
+# Optional: Show previous day's 3:00 PM candle for verification
+with st.expander("See previous day's 3PM candle details"):
+    st.dataframe(candle_3pm)
