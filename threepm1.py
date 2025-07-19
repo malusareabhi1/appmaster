@@ -79,15 +79,22 @@ for i, row in today_data.iterrows():
         break
 
 if signal:
+    # Ensure signal_time is a scalar
+    if isinstance(signal_time, pd.Series):
+        signal_time = signal_time.iloc[0]
+    signal_time = pd.to_datetime(signal_time)
+    # Ensure signal_price is a scalar
+    if isinstance(signal_price, pd.Series):
+        signal_price = float(signal_price.iloc[0])
+    else:
+        signal_price = float(signal_price)
     st.success(f"Trade Signal: **{signal}**")
-    #st.write(f"Triggered at: {signal_time.strftime('%Y-%m-%d %H:%M')}")
-    #st.write(f"Triggered at: {pd.to_datetime(signal_time).strftime('%Y-%m-%d %H:%M')}")
-    st.write(f"Triggered at: {pd.to_datetime(signal_time.iloc[0]).strftime('%Y-%m-%d %H:%M')}")
-
-
+    st.write(f"Triggered at: {signal_time.strftime('%Y-%m-%d %H:%M')}")
     st.write(f"Price: {signal_price:.2f}")
 else:
     st.info("No breakout/breakdown after 9:30 AM on selected date.")
+
+
 
 # Optional: Show table of today's data after 9:30 AM
 with st.expander("See today's (after 9:30AM) data"):
