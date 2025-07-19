@@ -25,7 +25,12 @@ data = yf.download(
 data.reset_index(inplace=True)
 
 # Convert to india timezone (if required)
-data['Datetime'] = data['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+#data['Datetime'] = data['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+# Convert to india timezone ONLY IF not already tz-aware
+if data['Datetime'].dt.tz is None:  # tz-naive
+    data['Datetime'] = data['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+else:  # tz-aware
+    data['Datetime'] = data['Datetime'].dt.tz_convert('Asia/Kolkata')
 
 # Extract last trading day for strategy candle
 last_trading_date = trade_date - datetime.timedelta(days=1)
