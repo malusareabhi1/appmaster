@@ -1,57 +1,92 @@
 import streamlit as st
+import yfinance as yf
 import pandas as pd
 import datetime
 
-st.title("NIFTY Option Trading Strategy: Last Day 3PM Candle Breakout")
+st.title("NIFTY Option Trading Strategy (Live Data)")
 
-# Upload your 15-min NIFTY data (CSV format)
-uploaded_file = st.file_uploader("Upload NIFTY 15m OHLC csv", type=['csv'])
+# User inputs on UI
+trade_date = st.date_input("Select trade date", datetime.datetime.now().date())
 
-if uploaded_file:
-    df = pd.read_csv(uploaded_file, parse_dates=['datetime'])
+# Ticker symbol for NIFTY on Yahoo Finance
+# "^NSEI" is commonly used for Nifty 50 index
+ticker = "^NSEI"
 
-    # User option to pick date
-    trading_date = st.date_input("Today's date (Strategy day)", datetime.date.today())
-    last_trading_day = trading_date - datetime.timedelta(days=1)
-    st.write(f'Backtest for Trade Date: {trading_date}, Reference Candle: {last_trading_day} 3:00 PM')
+# Fetch last 2 trading days of data at 15-min interval
+# We fetch extra day so we can get prev day's 3:00 PM candle
 
-    # Extract last day's 3PM candle (15:00:00)
-    mask_last_day = (df['datetime'].dt.date == last_trading_day) & (df['datetime'].dt.time == datetime.time(hour=15, minute=0))
-    ref_candle = df[mask_last_day]
+data = yf.download(
+    tickers=ticker,
+    period="5d",             # last 5 days just to be safe
+    interval="15m",
+    progress=False,
+)
 
-    if not ref_candle.empty:
-        ref_high = ref_candle['high'].values[0]
-        ref_low = ref_candle['low'].values[0]
-        st.write(f"Reference Candle High: {ref_high}, Low: {ref_low}")
+data.reset_index(inplace=True)
 
-        # Today's data after 9:30am
-        mask_today = (df['datetime'].dt.date == trading_date) & (df['datetime'].dt.time >= datetime.time(hour=9, minute=30))
-        today_data = df[mask_today].reset_index(drop=True)
+# Convert to india timezone (if required)
+data['Datetime'] = data['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
 
-        signal = ""
-        trigger_row = None
+# Extract last trading day for strategy candle
+last_trading_date = trade_date - datetime.timedelta(days=1)
 
-        # Check breakout logic
-        for idx, row in today_data.iterrows():
-            if row['high'] > ref_high:
-                signal = "CALL (Buy CE)"
-                trigger_row = row
-                break
-            elif row['low'] < ref_low:
-                signal = "PUT (Buy PE)"
-                trigger_row = row
-                break
+last_day_data = data[data['Datetime'].dt.date == last_trading_date]
 
-        if signal:
-            st.success(f"Signal: {signal} at {trigger_row['datetime']} [Price: {trigger_row['close']}]")
-        else:
-            st.info("No breakout/trade signal so far today.")
-    else:
-        st.error(f"No data for last trading day 3:00 PM candle.")
+if last_day_data.empty:
+    st.error(f"No data available for previous trading day: {last_trading_date}")
+    st.stop()
 
-st.markdown("""
-**How To Use:**
-1. Export/download your NIFTY 15-min OHLC data as CSV with columns: `datetime`, `open`, `high`, `low`, `close`.
-2. Upload the file above and select the intended date.
-3. The app will show if/when a breakout trade signal is triggered as per your strategy.
-""")
+# Find the 3:00 PM candle of last trading day
+candle_3pm = last_day_data[last_day_data['Datetime'].dt.time == datetime.time(15, 0)]
+
+if candle_3pm.empty:
+    st.error("No 3:00 PM candle found for last trading day")
+    st.stop()
+
+ref_high = candle_3pm['High'].values[0]
+ref_low = candle_3pm['Low'].values[0]
+
+st.write(f"Reference candle on {last_trading_date} 3:00 PM — High: {ref_high}, Low: {ref_low}")
+
+# Get today's data after 9:30 AM
+today_data = data[data['Datetime'].dt.date == trade_date]
+today_after_930 = today_data[today_data['Datetime'].dt.time >= datetime.time(9, 30)].reset_index(drop=True)
+
+if today_after_930.empty:
+    st.warning("No data available for today after 9:30 AM yet.")
+    st.stop()
+
+signal = None
+trigger_time = None
+trigger_price = None
+
+# Check signals in chronological order
+for idx, row in today_after_930.iterrows():
+    # Check breakout above last day 3pm high
+    if row['High'] > ref_high:
+        signal = "CALL (Buy CE)"
+        trigger_time = row['Datetime']
+        trigger_price = row['Close']
+        break
+    # Check breakdown below last day 3pm low
+    elif row['Low'] < ref_low:
+        signal = "PUT (Buy PE)"
+        trigger_time = row['Datetime']
+        trigger_price = row['Close']
+        break
+
+if signal:
+    st.success(
+        f"Trade Signal: {signal}\n"
+        f"Triggered at: {trigger_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"Price: {trigger_price:.2f}"
+    )
+else:
+    st.info("No breakout/breakdown signal detected after 9:30 AM today.")
+
+# Show data tables (optional)
+with st.expander("View Today's Data After 9:30 AM"):
+    st.write(today_after_930[['Datetime', 'Open', 'High', 'Low', 'Close']].tail(10))
+
+with st.expander("View Last Trading Day Data"):
+    st.write(last_day_data[['Datetime', 'Open', 'High', 'Low', 'Close']].tail(10))
