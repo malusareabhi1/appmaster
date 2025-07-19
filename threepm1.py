@@ -81,7 +81,9 @@ for i, row in today_data.iterrows():
 if signal:
     st.success(f"Trade Signal: **{signal}**")
     #st.write(f"Triggered at: {signal_time.strftime('%Y-%m-%d %H:%M')}")
-    st.write(f"Triggered at: {pd.to_datetime(signal_time).strftime('%Y-%m-%d %H:%M')}")
+    #st.write(f"Triggered at: {pd.to_datetime(signal_time).strftime('%Y-%m-%d %H:%M')}")
+    st.write(f"Triggered at: {pd.to_datetime(signal_time.iloc[0]).strftime('%Y-%m-%d %H:%M')}")
+
 
     st.write(f"Price: {signal_price:.2f}")
 else:
