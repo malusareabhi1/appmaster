@@ -6,41 +6,43 @@ from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator
 from datetime import date, timedelta
 
-st.set_page_config(page_title="Stock Trend Reversal Detector", layout="wide")
-st.title("📉 Trend Reversal Detector for Multiple Stocks")
+st.set_page_config(page_title="Trend Reversal Detector", layout="wide")
+st.title("🔁 Trend Reversal Detector")
 
-# Stock input
-ticker_input = st.text_area("Enter NSE Stock Tickers (comma-separated)", value="RELIANCE.NS, INFY.NS, TCS.NS")
+ticker_input = st.text_area("Enter NSE Tickers (comma-separated)", "RELIANCE.NS, INFY.NS, TCS.NS")
 tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
 
-# Date range
 start_date = st.date_input("Start Date", value=date.today() - timedelta(days=90))
 end_date = st.date_input("End Date", value=date.today())
 
 reversal_signals = []
 
-# Detect reversal logic
 def detect_reversal(df):
-    close = df['Close']  # This is a 1D Series
+    # Ensure 'Close' is 1D
+    close = df['Close']
+    if len(close.shape) > 1:
+        close = close.squeeze()  # Or: close = pd.Series(close.values.flatten())
 
-    # Indicators must receive 1D Series
-    sma9 = SMAIndicator(close=close, window=9).sma_indicator()
-    sma21 = SMAIndicator(close=close, window=21).sma_indicator()
-    rsi = RSIIndicator(close=close, window=14).rsi()
+    df['SMA9'] = SMAIndicator(close=close, window=9).sma_indicator()
+    df['SMA21'] = SMAIndicator(close=close, window=21).sma_indicator()
+    df['RSI'] = RSIIndicator(close=close, window=14).rsi()
 
-    df['SMA9'] = sma9
-    df['SMA21'] = sma21
-    df['RSI'] = rsi
     df['Signal'] = None
-
     for i in range(1, len(df)):
-        if (df['SMA9'].iloc[i-1] < df['SMA21'].iloc[i-1]) and (df['SMA9'].iloc[i] > df['SMA21'].iloc[i]) and df['RSI'].iloc[i] > 40:
+        if (
+            df['SMA9'].iloc[i - 1] < df['SMA21'].iloc[i - 1]
+            and df['SMA9'].iloc[i] > df['SMA21'].iloc[i]
+            and df['RSI'].iloc[i] > 40
+        ):
             df.loc[df.index[i], 'Signal'] = 'Bullish Reversal'
-        elif (df['SMA9'].iloc[i-1] > df['SMA21'].iloc[i-1]) and (df['SMA9'].iloc[i] < df['SMA21'].iloc[i]) and df['RSI'].iloc[i] < 60:
+        elif (
+            df['SMA9'].iloc[i - 1] > df['SMA21'].iloc[i - 1]
+            and df['SMA9'].iloc[i] < df['SMA21'].iloc[i]
+            and df['RSI'].iloc[i] < 60
+        ):
             df.loc[df.index[i], 'Signal'] = 'Bearish Reversal'
     return df
 
-# Main logic
 for ticker in tickers:
     try:
         df = yf.download(ticker, start=start_date, end=end_date)
@@ -66,6 +68,7 @@ for ticker in tickers:
             fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Close Price'))
             fig.add_trace(go.Scatter(x=df.index, y=df['SMA9'], name='SMA9'))
             fig.add_trace(go.Scatter(x=df.index, y=df['SMA21'], name='SMA21'))
+
             fig.add_trace(go.Scatter(
                 x=signal_df.index,
                 y=signal_df['Close'],
@@ -73,6 +76,7 @@ for ticker in tickers:
                 name='Reversal Signal',
                 marker=dict(color='red', size=10, symbol='x')
             ))
+
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info(f"No reversal signal detected for {ticker}")
@@ -80,9 +84,8 @@ for ticker in tickers:
     except Exception as e:
         st.error(f"Error processing {ticker}: {e}")
 
-# Summary Table
 if reversal_signals:
-    st.markdown("### 📋 Detected Reversal Summary")
+    st.markdown("### 📊 Summary of Detected Reversals")
     st.dataframe(pd.DataFrame(reversal_signals))
 else:
     st.warning("No trend reversal signals found.")
