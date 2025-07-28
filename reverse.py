@@ -11,7 +11,10 @@ st.set_page_config(page_title="Stock Trend Reversal Detector", layout="wide")
 st.title("📉 Trend Reversal Detector for Multiple Stocks")
 
 # Input Tickers
-ticker_input = st.text_area("Enter Stock Tickers (comma-separated, e.g., RELIANCE.NS, INFY.NS)", value="RELIANCE.NS, INFY.NS, TCS.NS")
+ticker_input = st.text_area(
+    "Enter Stock Tickers (comma-separated, e.g., RELIANCE.NS, INFY.NS)",
+    value="RELIANCE.NS, INFY.NS, TCS.NS"
+)
 tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
 
 # Date Range
@@ -36,6 +39,7 @@ def detect_reversal(df):
             df.loc[df.index[i], 'Signal'] = 'Bearish Reversal'
     return df
 
+# Process each stock
 for ticker in tickers:
     try:
         df = yf.download(ticker, start=start_date, end=end_date)
@@ -44,9 +48,42 @@ for ticker in tickers:
             continue
 
         df = detect_reversal(df)
-        last_signal = df[df['Signal'].notnull()].iloc[-1] if not df[df['Signal'].notnull()].empty else None
+        signal_df = df[df['Signal'].notnull()]
+        last_signal = signal_df.iloc[-1] if not signal_df.empty else None
 
         if last_signal is not None:
             reversal_signals.append({
                 "Stock": ticker,
                 "Date": last_signal.name.date(),
+                "Close": round(last_signal['Close'], 2),
+                "Signal": last_signal['Signal']
+            })
+
+            st.subheader(f"{ticker} - {last_signal['Signal']} on {last_signal.name.date()}")
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Close Price'))
+            fig.add_trace(go.Scatter(x=df.index, y=df['SMA9'], name='SMA9'))
+            fig.add_trace(go.Scatter(x=df.index, y=df['SMA21'], name='SMA21'))
+
+            fig.add_trace(go.Scatter(
+                x=signal_df.index,
+                y=signal_df['Close'],
+                mode='markers',
+                name='Reversal Signal',
+                marker=dict(color='red', size=10, symbol='x')
+            ))
+
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info(f"No reversal signal detected for {ticker}")
+
+    except Exception as e:
+        st.error(f"Error processing {ticker}: {e}")
+
+# Final Table
+if reversal_signals:
+    st.markdown("### 📋 Detected Reversal Summary")
+    st.dataframe(pd.DataFrame(reversal_signals))
+else:
+    st.warning("No trend reversal signals found in the given stocks and date range.")
