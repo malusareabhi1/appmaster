@@ -7,6 +7,8 @@ import numpy as np
 import pytz
 import os
 from datetime import datetime
+from datetime import time
+
 st.set_page_config(page_title="NIFTY 15-Min Chart with 3PM Breakout Strategy", layout="wide")
 
 st.title("📈 NIFTY 15-Min Chart – 3PM Breakout/Breakdown Strategy")
