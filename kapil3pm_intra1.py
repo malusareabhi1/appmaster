@@ -9,79 +9,7 @@ from datetime import datetime
 st.set_page_config(page_title="NIFTY 15-Min Chart with 3PM Breakout Strategy", layout="wide")
 
 st.title("📈 NIFTY 15-Min Chart – 3PM Breakout/Breakdown Strategy")
-# Simulate KiteConnect for paper trading
-class PaperKite:
-    def __init__(self):
-        self.orders = []
 
-    def place_order(self, symbol, direction, price, qty):
-        order = {
-            'symbol': symbol,
-            'direction': direction,
-            'price': price,
-            'qty': qty,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        self.orders.append(order)
-        print(f"[PAPER ORDER] {direction} {qty} x {symbol} at ₹{price}")
-        return order
-
-    def get_orders(self):
-        return self.orders
-
-# Instantiate paper broker
-test_kite = PaperKite()
-
-def get_option_symbol(ltp, direction="CE", is_itm=True):
-    step = 50
-    atm_strike = round(ltp / step) * step
-    if is_itm:
-        strike = atm_strike - step if direction == "CE" else atm_strike + step
-    else:
-        strike = atm_strike
-    return f"NIFTY{strike}{direction}"
-
-def simulate_live_option_trade(breakout_row, kite: PaperKite, trade_type="breakout"):
-    try:
-        ltp = breakout_row['Entry']
-        direction = "CE" if trade_type == "breakout" else "PE"
-        option_symbol = get_option_symbol(ltp, direction=direction, is_itm=True)
-
-        entry_price = ltp
-        stop_loss = breakout_row['SL']
-        risk_per_unit = abs(entry_price - stop_loss)
-        capital = initial_capital
-        risk_amount = capital * (risk_per_trade_pct / 100)
-        qty = int(risk_amount / risk_per_unit) if risk_per_unit != 0 else 0
-
-        if qty > 0:
-            kite.place_order(symbol=option_symbol, direction="BUY", price=entry_price, qty=qty)
-            st.success(f"✅ PAPER TRADE: {qty} x {option_symbol} at ₹{entry_price}")
-        else:
-            st.warning("⚠️ Not enough capital/risk to place trade.")
-
-    except Exception as e:
-        st.error(f"Trade Simulation Failed: {e}")
-
-# Run simulation on latest breakout and breakdown trades if available
-if not trade_log_df.empty:
-    st.subheader("📟 Simulated Option Trade (Breakout)")
-    latest_trade = trade_log_df.iloc[-1]
-    simulate_live_option_trade(latest_trade, kite=test_kite, trade_type="breakout")
-
-if not breakdown_df.empty:
-    st.subheader("📟 Simulated Option Trade (Breakdown)")
-    latest_trade = breakdown_df.iloc[-1]
-    simulate_live_option_trade(latest_trade, kite=test_kite, trade_type="breakdown")
-
-# Display all paper orders
-paper_orders = test_kite.get_orders()
-if paper_orders:
-    st.write("🧾 All Simulated Option Orders:")
-    st.dataframe(pd.DataFrame(paper_orders))
-
-#import plotly.express as px
-#import plotly.express as px
 
 
 st.sidebar.header("Settings")
@@ -525,4 +453,78 @@ st.download_button(
     key="paper_breakdown_csv"
 )
 
+
+# Simulate KiteConnect for paper trading
+class PaperKite:
+    def __init__(self):
+        self.orders = []
+
+    def place_order(self, symbol, direction, price, qty):
+        order = {
+            'symbol': symbol,
+            'direction': direction,
+            'price': price,
+            'qty': qty,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        self.orders.append(order)
+        print(f"[PAPER ORDER] {direction} {qty} x {symbol} at ₹{price}")
+        return order
+
+    def get_orders(self):
+        return self.orders
+
+# Instantiate paper broker
+test_kite = PaperKite()
+
+def get_option_symbol(ltp, direction="CE", is_itm=True):
+    step = 50
+    atm_strike = round(ltp / step) * step
+    if is_itm:
+        strike = atm_strike - step if direction == "CE" else atm_strike + step
+    else:
+        strike = atm_strike
+    return f"NIFTY{strike}{direction}"
+
+def simulate_live_option_trade(breakout_row, kite: PaperKite, trade_type="breakout"):
+    try:
+        ltp = breakout_row['Entry']
+        direction = "CE" if trade_type == "breakout" else "PE"
+        option_symbol = get_option_symbol(ltp, direction=direction, is_itm=True)
+
+        entry_price = ltp
+        stop_loss = breakout_row['SL']
+        risk_per_unit = abs(entry_price - stop_loss)
+        capital = initial_capital
+        risk_amount = capital * (risk_per_trade_pct / 100)
+        qty = int(risk_amount / risk_per_unit) if risk_per_unit != 0 else 0
+
+        if qty > 0:
+            kite.place_order(symbol=option_symbol, direction="BUY", price=entry_price, qty=qty)
+            st.success(f"✅ PAPER TRADE: {qty} x {option_symbol} at ₹{entry_price}")
+        else:
+            st.warning("⚠️ Not enough capital/risk to place trade.")
+
+    except Exception as e:
+        st.error(f"Trade Simulation Failed: {e}")
+
+# Run simulation on latest breakout and breakdown trades if available
+if not trade_log_df.empty:
+    st.subheader("📟 Simulated Option Trade (Breakout)")
+    latest_trade = trade_log_df.iloc[-1]
+    simulate_live_option_trade(latest_trade, kite=test_kite, trade_type="breakout")
+
+if not breakdown_df.empty:
+    st.subheader("📟 Simulated Option Trade (Breakdown)")
+    latest_trade = breakdown_df.iloc[-1]
+    simulate_live_option_trade(latest_trade, kite=test_kite, trade_type="breakdown")
+
+# Display all paper orders
+paper_orders = test_kite.get_orders()
+if paper_orders:
+    st.write("🧾 All Simulated Option Orders:")
+    st.dataframe(pd.DataFrame(paper_orders))
+
+#import plotly.express as px
+#import plotly.express as px
                                     
