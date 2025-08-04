@@ -456,6 +456,7 @@ st.download_button(
 
 
 # Simulate KiteConnect for paper trading
+# Simulate KiteConnect for paper trading
 class PaperKite:
     def __init__(self):
         self.orders = []
@@ -468,7 +469,7 @@ class PaperKite:
             'direction': direction,
             'price': price,
             'qty': qty,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': timestamp
         }
         self.orders.append(order)
         print(f"[PAPER ORDER] {direction} {qty} x {symbol} at ₹{price}")
@@ -502,6 +503,14 @@ def simulate_live_option_trade(breakout_row, kite: PaperKite, trade_type="breako
         risk_amount = capital * (risk_per_trade_pct / 100)
         qty = int(risk_amount / risk_per_unit) if risk_per_unit != 0 else 0
 
+        # ✅ Filter trades before 9:30 AM IST
+        entry_time = breakout_row.get('Entry Time')
+        if isinstance(entry_time, str):
+            entry_time = datetime.strptime(entry_time, "%H:%M:%S").time()
+        if entry_time < time(9, 30):
+            st.warning("⏳ Skipped trade before 9:30 AM IST")
+            return
+
         if qty > 0:
             kite.place_order(symbol=option_symbol, direction="BUY", price=entry_price, qty=qty)
             st.success(f"✅ PAPER TRADE: {qty} x {option_symbol} at ₹{entry_price}")
@@ -528,6 +537,21 @@ if paper_orders:
     st.write("🧾 All Simulated Option Orders:")
     st.dataframe(pd.DataFrame(paper_orders))
 
-#import plotly.express as px
-#import plotly.express as px
+# ✅ Filter all trades to force time-exit before 2:30 PM IST
+exit_cutoff = time(14, 30)
+for df in [trade_log_df, breakdown_df]:
+    for i, row in df.iterrows():
+        try:
+            exit_time = row['Exit Time']
+            if isinstance(exit_time, str):
+                exit_time = datetime.strptime(exit_time, "%H:%M:%S").time()
+            elif isinstance(exit_time, pd.Timestamp):
+                exit_time = exit_time.time()
+
+            if exit_time > exit_cutoff:
+                df.at[i, 'Exit Time'] = exit_cutoff
+                df.at[i, 'Result'] = '⏰ Time Exit'
+        except:
+            continue
+
                                     
