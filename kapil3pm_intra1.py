@@ -460,6 +460,8 @@ class PaperKite:
         self.orders = []
 
     def place_order(self, symbol, direction, price, qty):
+        ist = pytz.timezone('Asia/Kolkata')
+        timestamp = datetime.now(ist).strftime('%Y-%m-%d %H:%M:%S')
         order = {
             'symbol': symbol,
             'direction': direction,
