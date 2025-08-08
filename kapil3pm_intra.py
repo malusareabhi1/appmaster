@@ -207,16 +207,7 @@ def generate_trade_logs(df, offset):
 
 #df['date'] = df['datetime'].dt.date
 
-def get_3pm_or_last_candle(group):
-    # Try get exact 15:00 candle
-    candle_3pm = group[(group['datetime'].dt.hour == 15) & (group['datetime'].dt.minute == 0)]
-    if not candle_3pm.empty:
-        return candle_3pm.iloc[0]
-    else:
-        # If no 3PM candle, return candle with max time before 15:00
-        return group[group['datetime'] <= group['datetime'].dt.normalize() + pd.Timedelta(hours=15)].iloc[-1]
 
-df_3pm = df.groupby('date').apply(get_3pm_or_last_candle).reset_index(drop=True)
 
 
 def plot_candlestick_chart(df, df_3pm):
