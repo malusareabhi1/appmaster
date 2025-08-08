@@ -205,7 +205,7 @@ def generate_trade_logs(df, offset):
     return breakout_df, breakdown_df
 
 
-df['date'] = df['datetime'].dt.date
+#df['date'] = df['datetime'].dt.date
 
 def get_3pm_or_last_candle(group):
     # Try get exact 15:00 candle
